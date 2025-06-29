@@ -370,6 +370,11 @@ class CopilotClient {
                 editorPluginInfo: {
                     name: "copilot-node-client",
                     version: "1.0.0"
+                },
+                // Add authentication information
+                authProvider: "github-enterprise",
+                github: {
+                    token: process.env.GITHUB_TOKEN
                 }
             },
             workspaceFolders: [{
@@ -406,126 +411,719 @@ class CopilotClient {
         this.isInitialized = true;
         this.serverCapabilities = response.result.capabilities;
         
-        // Try to authenticate with Copilot after initialization
-        await this.authenticateWithCopilot();
-        
         console.log('✅ Serveur LSP initialisé');
         return response.result;
     }
 
-    async authenticateWithCopilot() {
-        console.log('🔑 Tentative d\'authentification avec GitHub Copilot...');
-        
-        try {
-            // Try to check if already signed in
-            const statusResponse = await this.sendRequest('checkStatus', {});
-            console.log('🔧 Status initial:', statusResponse);
-            
-            if (statusResponse.result && statusResponse.result.status === 'OK') {
-                console.log('✅ Déjà authentifié avec Copilot');
+    sendRequest(method, params) {
+        return new Promise((resolve, reject) => {
+            if (!this.process || !this.process.stdin) {
+                reject(new Error('Serveur LSP non disponible'));
                 return;
             }
-        } catch (error) {
-            console.log('🔧 Vérification du status échouée, continuons...');
-        }
 
-        try {
-            // Try to sign in with existing token
-            console.log('🔧 Tentative de connexion avec le token GitHub existant...');
-            const signInResponse = await this.sendRequest('signInInitiate', {});
-            console.log('🔧 Réponse signInInitiate:', signInResponse);
-            
-            if (signInResponse.result) {
-                // Follow the device flow if needed
-                await this.handleDeviceFlow(signInResponse.result);
-            }
-        } catch (error) {
-            console.log('❌ Échec de l\'authentification automatique:', error.message);
-            
-            // Try alternative authentication methods
-            await this.tryAlternativeAuth();
-        }
-    }
+            const id = this.requestId++;
+            const message = {
+                jsonrpc: '2.0',
+                id: id,
+                method: method,
+                params: params
+            };
 
-    async handleDeviceFlow(deviceFlowData) {
-        if (deviceFlowData.verificationUri && deviceFlowData.userCode) {
-            console.log('🔗 Authentification requise:');
-            console.log(`   1. Ouvrez: ${deviceFlowData.verificationUri}`);
-            console.log(`   2. Entrez le code: ${deviceFlowData.userCode}`);
-            console.log('   3. Attendez la confirmation...');
-            
-            // Poll for completion
-            const interval = deviceFlowData.interval || 5;
-            const maxAttempts = 60; // 5 minutes max
-            
-            for (let attempt = 0; attempt < maxAttempts; attempt++) {
-                await new Promise(resolve => setTimeout(resolve, interval * 1000));
-                
-                try {
-                    const confirmResponse = await this.sendRequest('signInConfirm', {
-                        userCode: deviceFlowData.userCode
-                    });
-                    
-                    if (confirmResponse.result && confirmResponse.result.status === 'OK') {
-                        console.log('✅ Authentification Copilot réussie!');
-                        return;
-                    }
-                } catch (error) {
-                    // Continue polling
-                    if (attempt % 6 === 0) { // Show progress every 30 seconds
-                        console.log(`🔧 En attente de l'authentification... (${attempt * interval}s)`);
-                    }
+            console.log(`🔧 Envoi de la requête ${method} avec ID ${id}`);
+            console.log('🔧 Message JSON:', JSON.stringify(message, null, 2));
+
+            this.pendingRequests.set(id, { resolve, reject, method });
+            this.sendMessage(message);
+
+            // Timeout plus long pour les requêtes de completion
+            const timeout = method === 'textDocument/completion' ? 60000 : 30000;
+            setTimeout(() => {
+                if (this.pendingRequests.has(id)) {
+                    this.pendingRequests.delete(id);
+                    reject(new Error(`Timeout pour la requête ${method} (${timeout/1000}s)`));
                 }
+            }, timeout);
+        });
+    }
+
+    sendNotification(method, params) {
+        const message = {
+            jsonrpc: '2.0',
+            method: method,
+            params: params
+        };
+        console.log(`🔧 Envoi de la notification ${method}`);
+        this.sendMessage(message);
+    }
+
+    sendMessage(message) {
+        const content = JSON.stringify(message);
+        const header = `Content-Length: ${Buffer.byteLength(content, 'utf8')}\r\n\r\n`;
+        const fullMessage = header + content;
+        
+        console.log('🔧 Message LSP complet à envoyer:');
+        console.log('Header:', JSON.stringify(header));
+        console.log('Content:', content);
+        console.log('Full message length:', fullMessage.length);
+        
+        if (this.process && this.process.stdin && !this.process.stdin.destroyed) {
+            try {
+                this.process.stdin.write(fullMessage, 'utf8');
+                console.log('✅ Message envoyé avec succès');
+            } catch (error) {
+                console.error('❌ Erreur lors de l\'envoi du message:', error);
             }
-            
-            throw new Error('Timeout d\'authentification Copilot');
+        } else {
+            console.error('❌ Process stdin non disponible');
         }
     }
 
-    async tryAlternativeAuth() {
-        console.log('🔧 Tentative de méthodes d\'authentification alternatives...');
+    handleMessage(message) {
+        console.log('🔧 Message reçu du serveur LSP:', JSON.stringify(message, null, 2));
         
-        // Method 1: Try with GitHub CLI token directly
-        if (process.env.GITHUB_TOKEN) {
-            try {
-                console.log('🔧 Tentative avec le token GitHub CLI...');
-                const tokenResponse = await this.sendRequest('setEditorInfo', {
-                    editorInfo: {
-                        name: "copilot-client",
-                        version: "1.0.0"
-                    },
-                    editorPluginInfo: {
-                        name: "copilot-node-client", 
-                        version: "1.0.0"
-                    },
-                    authProvider: "github-enterprise",
-                    github: {
+        if (message.id !== undefined && this.pendingRequests.has(message.id)) {
+            const { resolve, method } = this.pendingRequests.get(message.id);
+            this.pendingRequests.delete(message.id);
+            
+            if (message.error) {
+                console.error(`❌ Erreur LSP pour ${method}:`, message.error);
+            } else {
+                console.log(`✅ Réponse LSP réussie pour ${method}`);
+            }
+            
+            resolve(message);
+        } else if (message.method) {
+            // Gérer les notifications et requêtes du serveur
+            this.handleServerRequest(message);
+        } else {
+            console.log('🔧 Message LSP non géré:', message);
+        }
+    }
+
+    handleServerRequest(message) {
+        switch (message.method) {
+            case 'workspace/configuration':
+                // Répondre à la demande de configuration
+                this.sendConfigurationResponse(message);
+                break;
+            case 'window/logMessage':
+                console.log(`[LSP Log] ${message.params.message}`);
+                break;
+            case 'window/showMessage':
+                console.log(`[LSP Message] ${message.params.message}`);
+                break;
+            case 'statusNotification':
+                this.handleStatusNotification(message.params);
+                break;
+            case 'didChangeStatus':
+                this.handleStatusNotification(message.params);
+                break;
+            case 'window/showMessageRequest':
+                this.handleShowMessageRequest(message);
+                break;
+            default:
+                console.log(`🔧 Notification LSP: ${message.method}`);
+                break;
+        }
+    }
+
+    sendConfigurationResponse(request) {
+        console.log('🔧 Réponse à workspace/configuration');
+        
+        // Configuration par défaut pour GitHub Copilot avec authentification
+        const config = request.params.items.map(item => {
+            switch (item.section) {
+                case 'github.copilot':
+                    return {
+                        enable: {
+                            "*": true
+                        },
+                        advanced: {
+                            debug: {
+                                overrideEngine: "",
+                                testOverrideProxyUrl: "",
+                                overrideProxyUrl: ""
+                            }
+                        },
+                        inlineSuggest: {
+                            enable: true
+                        },
+                        authProvider: "github-enterprise"
+                    };
+                case 'github-enterprise':
+                    return {
+                        uri: "https://github.com",
                         token: process.env.GITHUB_TOKEN
+                    };
+                case 'http':
+                    return {
+                        proxy: "",
+                        proxyStrictSSL: true
+                    };
+                case 'telemetry':
+                    return {
+                        enableCrashReporter: false,
+                        enableTelemetry: false
+                    };
+                default:
+                    return {};
+            }
+        });
+
+        const response = {
+            jsonrpc: '2.0',
+            id: request.id,
+            result: config
+        };
+
+        this.sendMessage(response);
+    }
+
+    handleStatusNotification(params) {
+        console.log(`🔧 Status: ${params.status || params.kind} - ${params.message}`);
+        
+        if ((params.status === 'Error' || params.kind === 'Error') && 
+            params.message.includes('not signed into GitHub')) {
+            console.error('❌ Erreur d\'authentification GitHub Copilot détectée!');
+            console.log('🔧 Solutions recommandées:');
+            console.log('1. Vérifiez votre token: gh auth token');
+            console.log('2. Rafraîchissez: gh auth refresh');
+            console.log('3. Reconnectez-vous: gh auth logout && gh auth login --scopes "copilot"');
+            console.log('4. Redémarrez ce script après la reconnexion');
+        }
+    }
+
+    handleShowMessageRequest(request) {
+        console.log('🔧 Message request du serveur:', request.params.message);
+        
+        // Respond to the message request
+        const response = {
+            jsonrpc: '2.0',
+            id: request.id,
+            result: null // or the selected action
+        };
+        
+        this.sendMessage(response);
+    }
+
+    async initiateCopilotAuth() {
+        console.log('🔑 Démarrage de l\'authentification GitHub Copilot...');
+        
+        try {
+            // First try to refresh the token
+            console.log('🔧 Tentative de rafraîchissement du token GitHub...');
+            await exec('gh auth refresh');
+            
+            // Get the refreshed token
+            const { stdout: newToken } = await exec('gh auth token');
+            if (newToken.trim()) {
+                process.env.GITHUB_TOKEN = newToken.trim();
+                process.env.GITHUB_ACCESS_TOKEN = newToken.trim();
+                process.env.COPILOT_TOKEN = newToken.trim();
+                console.log('✅ Token rafraîchi et mis à jour');
+                
+                // Send updated configuration to the server
+                this.sendNotification('workspace/didChangeConfiguration', {
+                    settings: {
+                        "github-enterprise": {
+                            uri: "https://github.com",
+                            token: process.env.GITHUB_TOKEN
+                        }
                     }
                 });
                 
-                if (tokenResponse && !tokenResponse.error) {
-                    console.log('✅ Authentification par token réussie');
-                    return;
+                return;
+            }
+        } catch (error) {
+            console.log('❌ Échec du rafraîchissement automatique:', error.message);
+        }
+        
+        console.log('🔧 Action manuelle requise:');
+        console.log('1. Exécutez: gh auth logout');
+        console.log('2. Puis: gh auth login --scopes "copilot"');
+        console.log('3. Redémarrez ce script');
+        console.log('4. Ou si vous utilisez Copilot Business, contactez votre administrateur');
+    }
+
+    async openDocument(filePath) {
+        if (!fs.existsSync(filePath)) {
+            throw new Error(`Fichier non trouvé: ${filePath}`);
+        }
+
+        const content = fs.readFileSync(filePath, 'utf8');
+        const languageId = this.getLanguageId(filePath);
+        const absolutePath = path.resolve(filePath);
+        const uri = `file://${absolutePath.replace(/\\/g, '/')}`;
+
+        console.log(`🔧 Ouverture du document: ${filePath}`);
+        console.log(`🔧 URI: ${uri}`);
+        console.log(`🔧 Language ID: ${languageId}`);
+
+        this.sendNotification('textDocument/didOpen', {
+            textDocument: {
+                uri: uri,
+                languageId: languageId,
+                version: 1,
+                text: content
+            }
+        });
+
+        // Attendre un peu pour que le serveur traite le document
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        return uri;
+    }
+
+    async getCompletions(filePath, line, character) {
+        if (!this.isInitialized) {
+            throw new Error('Serveur LSP non initialisé');
+        }
+
+        const uri = await this.openDocument(filePath);
+        
+        console.log(`🔍 Recherche de completions pour ${path.basename(filePath)} à la ligne ${line + 1}, caractère ${character}`);
+        console.log(`🔧 URI utilisé: ${uri}`);
+
+        // Wait a bit more for the server to be ready after opening document
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        // Check if we need authentication first
+        console.log('🔧 Vérification de l\'état d\'authentification...');
+        
+        // Try different completion methods for Copilot
+        const completionMethods = [
+            'textDocument/inlineCompletion',  // GitHub Copilot specific
+            // 'getCompletions',                 // Alternative Copilot method
+            // 'textDocument/completion',        // Standard LSP
+            // 'copilot/getCompletions'          // Another possible method
+        ];
+
+        let response = null;
+        let usedMethod = null;
+        let authError = false;
+
+        for (const method of completionMethods) {
+            try {
+                console.log(`🔧 Essai de la méthode: ${method}`);
+                
+                let completionParams;
+                if (method === 'textDocument/inlineCompletion') {
+                    completionParams = {
+                        textDocument: { uri: uri },
+                        position: { line: line, character: character },
+                        context: {
+                            triggerKind: 1 // Invoked
+                        }
+                    };
+                } else if (method === 'getCompletions') {
+                    completionParams = {
+                        doc: {
+                            uri: uri,
+                            version: 1,
+                            position: { line: line, character: character }
+                        }
+                    };
+                } else {
+                    completionParams = {
+                        textDocument: { uri: uri },
+                        position: { line: line, character: character },
+                        context: {
+                            triggerKind: 1 // Invoked
+                        }
+                    };
+                }
+
+                console.log(`🔧 Paramètres pour ${method}:`, JSON.stringify(completionParams, null, 2));
+
+                response = await this.sendRequest(method, completionParams);
+                
+                if (response && !response.error) {
+                    usedMethod = method;
+                    console.log(`✅ Méthode ${method} réussie`);
+                    break;
+                } else if (response && response.error) {
+                    console.log(`❌ Méthode ${method} échouée:`, response.error.message);
+                    
+                    // Check for authentication errors specifically
+                    if (response.error.code === 1000 || 
+                        (response.error.message && response.error.message.includes('Not authenticated'))) {
+                        console.error('❌ Erreur d\'authentification GitHub Copilot détectée dans la réponse!');
+                        authError = true;
+                    }
                 }
             } catch (error) {
-                console.log('❌ Échec de l\'authentification par token:', error.message);
+                console.log(`❌ Erreur avec la méthode ${method}:`, error.message);
+                continue;
             }
         }
 
-        // Method 2: Try to use GitHub CLI authentication
-        try {
-            console.log('🔧 Tentative d\'utilisation de l\'authentification GitHub CLI...');
+        if (authError) {
+            console.error('❌ Problème d\'authentification détecté!');
+            console.log('🔧 Solutions possibles:');
+            console.log('1. Redémarrez votre terminal et relancez le script');
+            console.log('2. Exécutez: gh auth refresh');
+            console.log('3. Reconnectez-vous: gh auth logout && gh auth login --scopes "copilot"');
+            console.log('4. Vérifiez votre abonnement Copilot sur https://github.com/settings/copilot');
+            console.log('5. Si vous utilisez Copilot Business, contactez votre administrateur');
             
-            // Get GitHub user info to verify CLI auth
-            const { stdout: userInfo } = await exec('gh api user');
-            const user = JSON.parse(userInfo);
+            // Try to initiate authentication
+            await this.initiateCopilotAuth();
             
-            // Try to transfer CLI auth to Copilot
-            const authTransferResponse = await this.sendRequest('github/copilot/signInWithGitHubToken', {
-                token: process.env.GITHUB_TOKEN,
-                user: user.login
-            });
+            throw new Error('Authentification GitHub Copilot requise - veuillez suivre les instructions ci-dessus');
+        }
+
+        if (!response || response.error) {
+            console.error('❌ Toutes les méthodes de completion ont échoué');
+            if (response && response.error) {
+                console.error('❌ Dernière erreur:', response.error);
+            }
+            return [];
+        }
+
+        console.log(`✅ Completion réussie avec la méthode: ${usedMethod}`);
+        console.log('🔧 Réponse brute:', JSON.stringify(response, null, 2));
+
+        // Gérer les différents formats de réponse selon la méthode
+        let items = [];
+        if (response.result) {
+            if (usedMethod === 'textDocument/inlineCompletion') {
+                // Format pour inlineCompletion
+                if (Array.isArray(response.result.items)) {
+                    items = response.result.items.map(item => ({
+                        label: item.insertText || item.text || '',
+                        insertText: item.insertText || item.text || '',
+                        kind: 1, // Text kind
+                        detail: 'GitHub Copilot'
+                    }));
+                } else if (response.result.items) {
+                    items = [response.result.items].map(item => ({
+                        label: item.insertText || item.text || '',
+                        insertText: item.insertText || item.text || '',
+                        kind: 1,
+                        detail: 'GitHub Copilot'
+                    }));
+                }
+            } else if (Array.isArray(response.result)) {
+                items = response.result;
+            } else if (response.result.items) {
+                items = response.result.items;
+            } else if (response.result.completions) {
+                items = response.result.completions;
+            }
+        }
+        
+        if (items.length === 0) {
+            console.log('ℹ️  Aucune suggestion Copilot disponible');
+            return [];
+        }
+
+        console.log(`🤖 ${items.length} suggestion(s) Copilot trouvée(s):`);
+        items.forEach((item, index) => {
+            const text = item.insertText || item.text || item.label || '';
+            const kind = this.getCompletionKindName(item.kind);
+            const preview = text.split('\n')[0];
+            const hasMoreLines = text.includes('\n');
             
-            if (authTransferResponse && !authTransferResponse.error) {
-               
+            console.log(`  ${index + 1}. [${kind}] ${preview}${hasMoreLines ? '...' : ''}`);
+            
+            if (item.detail) {
+                console.log(`      Detail: ${item.detail}`);
+            }
+        });
+
+        return items;
+    }
+
+    getLanguageId(filePath) {
+        const ext = path.extname(filePath).toLowerCase();
+        const langMap = {
+            '.py': 'python',
+            '.js': 'javascript',
+            '.mjs': 'javascript',
+            '.jsx': 'javascriptreact',
+            '.ts': 'typescript',
+            '.tsx': 'typescriptreact',
+            '.java': 'java',
+            '.cpp': 'cpp',
+            '.cc': 'cpp',
+            '.cxx': 'cpp',
+            '.c': 'c',
+            '.h': 'c',
+            '.hpp': 'cpp',
+            '.go': 'go',
+            '.rs': 'rust',
+            '.rb': 'ruby',
+            '.php': 'php',
+            '.cs': 'csharp',
+            '.sh': 'shellscript',
+            '.bash': 'shellscript',
+            '.zsh': 'shellscript',
+            '.fish': 'fish',
+            '.html': 'html',
+            '.htm': 'html',
+            '.css': 'css',
+            '.scss': 'scss',
+            '.sass': 'sass',
+            '.less': 'less',
+            '.json': 'json',
+            '.xml': 'xml',
+            '.md': 'markdown',
+            '.markdown': 'markdown',
+            '.yml': 'yaml',
+            '.yaml': 'yaml',
+            '.toml': 'toml',
+            '.ini': 'ini',
+            '.cfg': 'ini',
+            '.conf': 'conf',
+            '.dockerfile': 'dockerfile',
+            '.sql': 'sql',
+            '.r': 'r',
+            '.R': 'r',
+            '.swift': 'swift',
+            '.kt': 'kotlin',
+            '.scala': 'scala',
+            '.clj': 'clojure',
+            '.hs': 'haskell',
+            '.elm': 'elm',
+            '.dart': 'dart',
+            '.lua': 'lua',
+            '.perl': 'perl',
+            '.pl': 'perl'
+        };
+        return langMap[ext] || 'plaintext';
+    }
+
+    getCompletionKindName(kind) {
+        const kindMap = {
+            1: 'Text', 2: 'Method', 3: 'Function', 4: 'Constructor',
+            5: 'Field', 6: 'Variable', 7: 'Class', 8: 'Interface',
+            9: 'Module', 10: 'Property', 11: 'Unit', 12: 'Value',
+            13: 'Enum', 14: 'Keyword', 15: 'Snippet', 16: 'Color',
+            17: 'File', 18: 'Reference', 19: 'Folder', 20: 'EnumMember',
+            21: 'Constant', 22: 'Struct', 23: 'Event', 24: 'Operator',
+            25: 'TypeParameter'
+        };
+        return kindMap[kind] || 'Unknown';
+    }
+
+    async stop() {
+        console.log('🛑 Arrêt du serveur LSP...');
+        
+        // Envoyer shutdown request
+        if (this.isInitialized) {
+            try {
+                await this.sendRequest('shutdown', null);
+                this.sendNotification('exit', null);
+            } catch (error) {
+                console.log('Erreur lors de l\'arrêt propre:', error.message);
+            }
+        }
+
+        if (this.process && !this.process.killed) {
+            this.process.kill('SIGTERM');
+            
+            // Forcer l'arrêt après 2 secondes
+            setTimeout(() => {
+                if (this.process && !this.process.killed) {
+                    this.process.kill('SIGKILL');
+                }
+            }, 2000);
+        }
+        
+        console.log('✅ Serveur LSP arrêté');
+    }
+}
+
+// Fonction de démonstration
+async function demo() {
+    const client = new CopilotClient();
+    
+    try {
+        await client.start();
+        
+        // Créer des fichiers de test plus réalistes
+        const testFiles = [
+            {
+                name: path.join(__dirname, 'test_fibonacci.py'),
+                content: `def fibonacci(n):
+    """Calculate fibonacci number recursively"""
+    if (n <= 1:
+        return n
+    # Add recursive implementation here
+    `,
+                line: 4,
+                char: 4
+            },
+            {
+                name: path.join(__dirname, 'test_quicksort.js'),
+                content: `function quicksort(arr) {
+    if (arr.length <= 1) {
+        return arr;
+    }
+    const pivot = arr[0];
+    // Implement partitioning logic
+    `,
+                line: 5,
+                char: 4
+            },
+            {
+                name: path.join(__dirname, 'test_react.jsx'),
+                content: `import React, { useState } from 'react';
+
+function TodoApp() {
+    const [todos, setTodos] = useState([]);
+    
+    // Add function to handle new todo
+    `,
+                line: 5,
+                char: 4
+            }
+        ];
+
+        console.log('📝 Création des fichiers de test...');
+        
+        for (const testFile of testFiles) {
+            try {
+                fs.writeFileSync(testFile.name, testFile.content);
+                console.log(`\n📄 Test: ${path.basename(testFile.name)}`);
+                console.log('Contenu:');
+                console.log(testFile.content);
+                
+                const completions = await client.getCompletions(testFile.name, testFile.line, testFile.char);
+                
+                if (completions.length > 0) {
+                    console.log('\n🎯 Première suggestion:');
+                    const first = completions[0];
+                    const suggestion = first.insertText || first.label;
+                    console.log(suggestion);
+                }
+                
+                console.log('----------------------------------------');
+            } catch (error) {
+                console.error(`❌ Erreur avec ${testFile.name}:`, error.message);
+            }
+        }
+        
+        // Nettoyer les fichiers de test
+        testFiles.forEach(file => {
+            try { 
+                if (fs.existsSync(file.name)) {
+                    fs.unlinkSync(file.name); 
+                }
+            } catch (e) {
+                console.log(`Impossible de supprimer ${file.name}:`, e.message);
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur:', error.message);
+        if (error.message.includes('copilot-language-server non disponible')) {
+            console.log('\n🔧 Instructions d\'installation:');
+            console.log('1. Installez le serveur: npm install -g @github/copilot-language-server');
+            console.log('2. Vérifiez l\'auth GitHub: gh auth status');
+            console.log('3. Si nécessaire: gh auth login');
+        }
+    } finally {
+        await client.stop();
+    }
+}
+
+// Interface CLI améliorée
+async function main() {
+    const args = process.argv.slice(2);
+    const command = args[0] || 'help';
+
+    switch (command) {
+        case 'demo':
+            await demo();
+            break;
+            
+        case 'complete':
+            if (args.length < 4) {
+                console.log('Usage: node copilot-client.js complete <fichier> <ligne> <caractère>');
+                console.log('Exemple: node copilot-client.js complete script.py 25 0');
+                process.exit(1);
+            }
+            
+            const client = new CopilotClient();
+            try {
+                await client.start();
+                const line = parseInt(args[2]) - 1; // Convertir en index 0
+                const char = parseInt(args[3]);
+                const completions = await client.getCompletions(args[1], line, char);
+                
+                if (completions.length > 0) {
+                    console.log('\n📋 Suggestions disponibles:');
+                    completions.forEach((item, i) => {
+                        console.log(`\n--- Suggestion ${i + 1} ---`);
+                        console.log(item.insertText || item.label);
+                    });
+                }
+                
+            } catch (error) {
+                console.error('❌ Erreur:', error.message);
+                process.exit(1);
+            } finally {
+                await client.stop();
+            }
+            break;
+
+        case 'check':
+            const checkClient = new CopilotClient();
+            try {
+                await checkClient.checkDependencies();
+                console.log('✅ Toutes les dépendances sont disponibles');
+            } catch (error) {
+                console.error('❌ Vérification échouée:', error.message);
+                process.exit(1);
+            }
+            break;
+            
+        case 'help':
+        default:
+            console.log('🚀 Client GitHub Copilot LSP (Node.js)');
+            console.log('=====================================');
+            console.log('Usage: node copilot-client.js <commande> [options]');
+            console.log('');
+            console.log('Commandes:');
+            console.log('  demo                          - Démonstration avec fichiers de test');
+            console.log('  complete <file> <line> <char> - Obtenir des completions');
+            console.log('  check                         - Vérifier les dépendances');
+            console.log('  help                          - Afficher cette aide');
+            console.log('');
+            console.log('Exemples:');
+            console.log('  node copilot-client.js demo');
+            console.log('  node copilot-client.js complete script.py 25 0');
+            console.log('  node copilot-client.js check');
+            console.log('');
+            console.log('Prérequis:');
+            console.log('  - npm install -g @github/copilot-language-server');
+            console.log('  - gh auth login (authentification GitHub)');
+            console.log('  - Abonnement GitHub Copilot actif');
+    }
+}
+
+// Gestion propre de l'arrêt
+let client = null;
+
+process.on('SIGINT', async () => {
+    console.log('\n🛑 Arrêt du client...');
+    if (client) {
+        await client.stop();
+    }
+    process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+    console.log('\n🛑 Arrêt du client...');
+    if (client) {
+        await client.stop();
+    }
+    process.exit(0);
+});
+
+main().catch((error) => {
+    console.error('❌ Erreur fatale:', error.message);
+    process.exit(1);
+});
