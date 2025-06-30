@@ -6,6 +6,8 @@ const fs = require('fs');
 
 let copilotServer = null;
 let messageId = 1;
+let isPolling = false;
+let pollInterval = null;
 
 // Fonction pour détecter et démarrer le serveur Copilot
 async function startCopilotServer() {
@@ -155,6 +157,8 @@ async function initialize() {
     
     // Setup message handling
     let buffer = '';
+    let authenticationConfirmed = false;
+    
     copilotServer.stdout.on('data', (data) => {
       buffer += data.toString();
       
@@ -180,7 +184,63 @@ async function initialize() {
           const parsed = JSON.parse(message);
           console.log(`← Reçu:`, JSON.stringify(parsed, null, 2));
           
-          // Gestion spéciale pour les réponses d'authentification
+          // Gestion des réponses de statut - succès d'authentification
+          if (parsed.result && parsed.result.status === 'OK' && parsed.result.user) {
+            if (!authenticationConfirmed) {
+              authenticationConfirmed = true;
+              console.log('\n🎉 AUTHENTIFICATION DÉJÀ ACTIVE! 🎉');
+              console.log('═'.repeat(60));
+              console.log(`✅ Utilisateur connecté: ${parsed.result.user}`);
+              console.log('✅ GitHub Copilot est prêt à utiliser');
+              console.log('✅ Aucune authentification supplémentaire requise');
+              console.log('═'.repeat(60));
+              
+              // Arrêter le polling s'il est en cours
+              if (isPolling && pollInterval) {
+                clearInterval(pollInterval);
+                isPolling = false;
+                console.log('🛑 Arrêt du polling - authentification confirmée');
+              }
+              
+              console.log('\n💡 PROCHAINES ÉTAPES:');
+              console.log('🔹 Vous pouvez maintenant utiliser copilot-client.js pour les suggestions');
+              console.log('🔹 Exemple: node copilot-client.js demo');
+              console.log('🔹 Ou tapez "quit" pour fermer ce script d\'authentification');
+              console.log('🔹 Pas besoin de la commande "confirm" - vous êtes déjà connecté!');
+              
+              return; // Pas besoin de continuer le processus d'auth
+            }
+          }
+          
+          // Gestion des erreurs "No pending sign in" - c'est un succès!
+          if (parsed.error && parsed.error.message === 'No pending sign in') {
+            if (!authenticationConfirmed) {
+              authenticationConfirmed = true;
+              console.log('\n🎉 AUTHENTIFICATION CONFIRMÉE! 🎉');
+              console.log('═'.repeat(60));
+              console.log('✅ "No pending sign in" signifie que vous êtes déjà connecté');
+              console.log('✅ GitHub Copilot est prêt à utiliser');
+              console.log('✅ L\'authentification est terminée avec succès');
+              console.log('═'.repeat(60));
+              
+              // Arrêter le polling
+              if (isPolling && pollInterval) {
+                clearInterval(pollInterval);
+                isPolling = false;
+                console.log('🛑 Arrêt du polling - authentification confirmée');
+              }
+              
+              console.log('\n💡 PROCHAINES ÉTAPES:');
+              console.log('🔹 Vous pouvez maintenant utiliser copilot-client.js pour les suggestions');
+              console.log('🔹 Exemple: node copilot-client.js demo');
+              console.log('🔹 Ou tapez "quit" pour fermer ce script d\'authentification');
+              console.log('🔹 Pas besoin de la commande "confirm" - vous êtes déjà connecté!');
+              
+              return;
+            }
+          }
+          
+          // Gestion spéciale pour les réponses d'authentification (nouveau flow)
           if (parsed.result && parsed.result.verificationUri && parsed.result.userCode) {
             console.log('\n🔗 AUTHENTIFICATION GITHUB COPILOT REQUISE 🔗');
             console.log('═'.repeat(60));
@@ -198,6 +258,8 @@ async function initialize() {
             console.log('   3. Saisissez le code utilisateur affiché ci-dessus');
             console.log('   4. Autorisez l\'accès à GitHub Copilot');
             console.log('   5. Revenez à ce terminal');
+            console.log('');
+            console.log(`💡 OU utilisez la commande: confirm ${parsed.result.userCode}`);
             console.log('═'.repeat(60));
             console.log('⏳ Attente de votre authentification...');
             console.log('');
@@ -257,11 +319,17 @@ async function initialize() {
 
     // 4. Interface interactive
     setTimeout(() => {
-      console.log('\n📝 Commandes disponibles:');
-      console.log('- "auth" : Démarrer l\'authentification');
-      console.log('- "status" : Vérifier le statut');
-      console.log('- "confirm <code>" : Confirmer avec code utilisateur');
-      console.log('- "quit" : Quitter');
+      if (!authenticationConfirmed) {
+        console.log('\n📝 Commandes disponibles:');
+        console.log('- "auth" : Démarrer l\'authentification');
+        console.log('- "status" : Vérifier le statut');
+        console.log('- "confirm <code>" : Confirmer avec code utilisateur (après avoir vu le code)');
+        console.log('- "stop" : Arrêter le polling automatique');
+        console.log('- "quit" : Quitter');
+        console.log('');
+        console.log('💡 La commande "confirm" n\'est utilisée que si vous voyez un code d\'authentification');
+        console.log('💡 Si vous êtes déjà connecté, utilisez simplement "quit" pour sortir');
+      }
       
       rl.on('line', (input) => {
         const parts = input.trim().split(' ');
@@ -282,20 +350,37 @@ async function initialize() {
             if (parts.length > 1) {
               const userCode = parts[1];
               console.log(`🔄 Confirmation avec code: ${userCode}`);
+              console.log('💡 Ceci n\'est nécessaire que si vous avez reçu un nouveau code d\'authentification');
               sendMessage('signInConfirm', { userCode: userCode });
             } else {
               console.log('❌ Usage: confirm <code_utilisateur>');
+              console.log('💡 Exemple: confirm ABCD-EFGH');
+              console.log('💡 Utilisez cette commande seulement si vous voyez un code d\'authentification');
+            }
+            break;
+            
+          case 'stop':
+            if (isPolling && pollInterval) {
+              clearInterval(pollInterval);
+              isPolling = false;
+              console.log('🛑 Polling automatique arrêté manuellement');
+            } else {
+              console.log('ℹ️  Aucun polling en cours');
             }
             break;
             
           case 'quit':
             console.log('👋 Au revoir!');
+            console.log('✅ GitHub Copilot reste authentifié pour une utilisation future');
+            if (pollInterval) {
+              clearInterval(pollInterval);
+            }
             copilotServer.kill();
             rl.close();
             break;
             
           default:
-            console.log('❌ Commande inconnue. Utilisez: auth, status, confirm <code>, ou quit');
+            console.log('❌ Commande inconnue. Utilisez: auth, status, confirm <code>, stop, ou quit');
         }
       });
     }, 3000);
@@ -309,34 +394,24 @@ async function initialize() {
 // Fonction pour démarrer le polling automatique
 function startPolling(userCode) {
   console.log('🔄 Démarrage du polling automatique...');
+  isPolling = true;
   
-  const pollInterval = setInterval(() => {
+  pollInterval = setInterval(() => {
     console.log('🔄 Vérification de l\'authentification...');
     sendMessage('signInConfirm', { userCode: userCode });
   }, 10000); // Toutes les 10 secondes
   
   // Arrêter le polling après 15 minutes
   setTimeout(() => {
-    clearInterval(pollInterval);
-    console.log('⏰ Timeout du polling automatique');
+    if (pollInterval) {
+      clearInterval(pollInterval);
+      isPolling = false;
+      console.log('⏰ Timeout du polling automatique');
+    }
   }, 15 * 60 * 1000);
   
   // Permettre l'arrêt manuel du polling
   console.log('💡 Tapez "stop" pour arrêter le polling automatique');
-  const originalHandler = rl.listeners('line')[0];
-  
-  const stopPollingHandler = (input) => {
-    if (input.trim().toLowerCase() === 'stop') {
-      clearInterval(pollInterval);
-      console.log('🛑 Polling automatique arrêté');
-      rl.removeListener('line', stopPollingHandler);
-      if (originalHandler) {
-        rl.on('line', originalHandler);
-      }
-    }
-  };
-  
-  rl.on('line', stopPollingHandler);
 }
 
 // Démarrer l'application
