@@ -472,15 +472,37 @@ async function initialize() {
             break;
             
           case 'quit':
+          case 'exit':
             console.log('👋 Au revoir!');
             console.log('✅ GitHub Copilot reste authentifié pour une utilisation future');
             console.log('🔧 L\'authentification sera disponible pour tous les clients Copilot compatibles');
             console.log('💡 Utilisez "unauth" avant "quit" si vous voulez vous déconnecter');
+            
+            // Nettoyer les ressources dans le bon ordre
             if (pollInterval) {
               clearInterval(pollInterval);
+              isPolling = false;
             }
-            copilotServer.kill();
+            
+            // Fermer le readline interface
             rl.close();
+            
+            // Tuer le serveur copilot
+            if (copilotServer && !copilotServer.killed) {
+              copilotServer.kill('SIGTERM');
+              
+              // Forcer l'arrêt après 2 secondes si nécessaire
+              setTimeout(() => {
+                if (copilotServer && !copilotServer.killed) {
+                  copilotServer.kill('SIGKILL');
+                }
+                // S'assurer que le processus se termine
+                process.exit(0);
+              }, 2000);
+            } else {
+              // Pas de serveur à tuer, sortir immédiatement
+              process.exit(0);
+            }
             break;
             
           default:
