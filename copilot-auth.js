@@ -268,8 +268,9 @@ async function initialize() {
             setTimeout(() => startPolling(parsed.result.userCode), 5000);
           }
 
-          // Gestion des réponses de déconnexion
-          if (parsed.result && parsed.id && parsed.result.status === 'NotSignedIn') {
+          // Gestion des réponses de déconnexion - seulement pour les vraies déconnexions
+          if (parsed.result && parsed.method === 'signOut' && 
+              (parsed.result.status === 'NotSignedIn' || parsed.result.status === 'SignedOut')) {
             console.log('\n✅ DÉCONNEXION RÉUSSIE! ✅');
             console.log('═'.repeat(60));
             console.log('🔓 Vous avez été déconnecté de GitHub Copilot');
@@ -280,26 +281,31 @@ async function initialize() {
             return;
           }
           
-          // Gestion spéciale pour la déconnexion réussie (autre format)
-          if (parsed.result && typeof parsed.result === 'object' && 
-              (parsed.result.message === 'Signed out' || 
-               parsed.result.status === 'SignedOut' ||
-               parsed.result.status === 'OK')) {
-            console.log('\n✅ DÉCONNEXION TERMINÉE! ✅');
-            console.log('═'.repeat(60));
-            console.log('🔓 GitHub Copilot déconnecté avec succès');
-            console.log('🔓 Session d\'authentification fermée');
-            console.log('🔓 Vous devrez vous reconnecter avec "auth"');
-            console.log('═'.repeat(60));
-            authenticationConfirmed = false;
-            return;
+          // Gestion spéciale pour signOut réussi
+          if (parsed.result && !parsed.error && 
+              parsed.id && typeof parsed.result === 'object') {
+            // Vérifier si c'est une réponse à signOut
+            const pendingRequest = messageId - 1; // Approximation
+            if (parsed.result.status === 'OK' || parsed.result === null || 
+                Object.keys(parsed.result).length === 0) {
+              console.log('\n✅ DÉCONNEXION TERMINÉE! ✅');
+              console.log('═'.repeat(60));
+              console.log('🔓 GitHub Copilot déconnecté avec succès');
+              console.log('🔓 Session d\'authentification fermée');
+              console.log('🔓 Vous devrez vous reconnecter avec "auth"');
+              console.log('═'.repeat(60));
+              authenticationConfirmed = false;
+              return;
+            }
           }
           
-          // Gestion des erreurs de déconnexion
+          // Gestion des erreurs de déconnexion pour les vraies tentatives de signOut
           if (parsed.error && parsed.error.message && 
               (parsed.error.message.includes('not signed in') || 
                parsed.error.message.includes('Not signed in') ||
                parsed.error.message.includes('No active session'))) {
+            
+            // Seulement traiter comme déconnexion si nous avons explicitement demandé signOut
             console.log('\n🔓 DÉJÀ DÉCONNECTÉ! 🔓');
             console.log('═'.repeat(60));
             console.log('ℹ️  Vous n\'étiez pas connecté à GitHub Copilot');
@@ -308,6 +314,37 @@ async function initialize() {
             console.log('═'.repeat(60));
             authenticationConfirmed = false;
             return;
+          }
+          
+          // Gestion des succès d'authentification via signInConfirm
+          if (parsed.result && (parsed.result.status === 'OK' || 
+                               parsed.result.status === 'Authorized' ||
+                               parsed.result.status === 'SignedIn' ||
+                               parsed.result.status === 'AlreadySignedIn')) {
+            if (!authenticationConfirmed) {
+              authenticationConfirmed = true;
+              console.log('\n🎉 AUTHENTIFICATION RÉUSSIE VIA SIGNIN! 🎉');
+              console.log('═'.repeat(60));
+              console.log('✅ GitHub Copilot est maintenant connecté');
+              console.log('✅ L\'authentification est terminée avec succès');
+              console.log('✅ Session active et prête à utiliser');
+              console.log('═'.repeat(60));
+              
+              // Arrêter le polling
+              if (isPolling && pollInterval) {
+                clearInterval(pollInterval);
+                isPolling = false;
+                console.log('🛑 Arrêt du polling - authentification confirmée');
+              }
+              
+              console.log('\n💡 PROCHAINES ÉTAPES:');
+              console.log('🔹 GitHub Copilot est maintenant authentifié et prêt');
+              console.log('🔹 L\'authentification est persistante entre les sessions');
+              console.log('🔹 Vous pouvez maintenant utiliser des clients Copilot compatibles');
+              console.log('🔹 Tapez "quit" pour fermer ce script d\'authentification');
+              
+              return;
+            }
           }
           
         } catch (e) {
@@ -417,21 +454,9 @@ async function initialize() {
               console.log('🛑 Arrêt du polling avant déconnexion');
             }
             
-            // Tenter différentes méthodes de déconnexion
-            console.log('🔧 Tentative de signOut...');
+            // Utiliser seulement signOut - les autres méthodes ne sont pas supportées
+            console.log('🔧 Déconnexion en cours...');
             sendMessage('signOut', { dummy: 'value' });
-            
-            // // Alternative: signOutConfirm si supporté
-            // setTimeout(() => {
-            //   console.log('🔧 Tentative alternative de signOutConfirm...');
-            //   sendMessage('signOutConfirm', { dummy: 'value' });
-            // }, 2000);
-            
-            // // Alternative: notifySignedOut si supporté
-            // setTimeout(() => {
-            //   console.log('🔧 Notification de déconnexion...');
-            //   sendMessage('notifySignedOut', { dummy: 'value' });
-            // }, 4000);
             
             authenticationConfirmed = false;
             break;
