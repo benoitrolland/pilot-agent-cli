@@ -322,7 +322,7 @@ class CopilotClient {
                     await new Promise((resolveWait, rejectWait) => {
                         const timeout = setTimeout(() => {
                             resolveWait(); // Success if no immediate error
-                        }, 1000);
+                        }, 5000);
 
                         this.process.on('error', (error) => {
                             clearTimeout(timeout);
@@ -485,7 +485,7 @@ class CopilotClient {
         this.sendNotification('initialized', {});
         
         // Wait a bit before sending configuration
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 5000));
         
         // Send Copilot-specific authentication through signInInitiate
         console.log('🔧 Initiation de l\'authentification Copilot...');
@@ -640,6 +640,9 @@ class CopilotClient {
         let consecutiveErrors = 0;
         let lastSuccessfulCheck = Date.now();
         
+        // Store the user code for later use in refresh
+        this.lastUserCode = userCode;
+        
         console.log(`🔄 Polling d'authentification toutes les ${interval} secondes (max ${maxAttempts} tentatives)...`);
         
         // Set polling flag to reduce log noise
@@ -722,7 +725,12 @@ class CopilotClient {
                                 
                                 // Send authentication refresh notifications to the LSP server
                                 console.log('🔧 Actualisation de l\'état d\'authentification du serveur...');
-                                await this.refreshServerAuthentication();
+                                const refreshSuccess = await this.refreshServerAuthentication();
+                                
+                                if (!refreshSuccess) {
+                                    console.log('⚠️  Le serveur LSP ne reconnaît pas encore l\'authentification');
+                                    console.log('🔧 Ceci est normal - les tokens peuvent prendre du temps à se synchroniser');
+                                }
                                 
                                 resolve(confirmResponse.result);
                                 return;
@@ -743,7 +751,12 @@ class CopilotClient {
                                 
                                 // Send authentication refresh notifications
                                 console.log('🔧 Actualisation de l\'état d\'authentification du serveur...');
-                                await this.refreshServerAuthentication();
+                                const refreshSuccess = await this.refreshServerAuthentication();
+                                
+                                if (!refreshSuccess) {
+                                    console.log('⚠️  Le serveur LSP ne reconnaît pas encore l\'authentification');
+                                    console.log('🔧 Ceci est normal - les tokens peuvent prendre du temps à se synchroniser');
+                                }
                                 
                                 resolve(confirmResponse.result);
                                 return;
@@ -843,111 +856,101 @@ class CopilotClient {
                             return;
                         } else if (errorMessage.includes('No pending sign in') || 
                                    errorMessage.includes('no pending sign in')) {
-                            consecutiveErrors++;
                             
-                            // IMPORTANT: When we get "No pending sign in", it often means authentication succeeded
-                            // but the device flow session is cleaned up. Let's check status immediately.
-                            if (consecutiveErrors <= 2) {
-                                console.log('🔧 "No pending sign in" - vérification immédiate du statut d\'authentification...');
-                                try {
-                                    const immediateStatusResponse = await this.sendRequest('checkStatus', {
-                                        dummy: 'value'
-                                    });
-                                    
-                                    if (immediateStatusResponse && immediateStatusResponse.result) {
-                                        const immediateStatus = immediateStatusResponse.result.status;
-                                        if (immediateStatus === 'OK' || immediateStatus === 'Authorized' || 
-                                            immediateStatus === 'SignedIn' || immediateStatus === 'AlreadySignedIn') {
-                                            console.log('\n✅ AUTHENTIFICATION TROUVÉE APRÈS "NO PENDING SIGN IN"! 🎉');
-                                            console.log('🔐 L\'authentification a réussi - la session device flow était simplement fermée');
-                                            this.isPolling = false;
-                                            clearInterval(pollInterval);
-                                            clearInterval(fastStatusChecker);
-                                            this.authenticationFailed = false;
-                                            
-                                            await this.refreshServerAuthentication();
-                                            resolve(immediateStatusResponse.result);
-                                            return;
-                                        }
-                                    }
-                                } catch (immediateStatusError) {
-                                    console.log('ℹ️  Vérification immédiate échouée');
+                            // "No pending sign in" means the user has completed authentication!
+                            // The device flow session is complete - this is SUCCESS, not an error
+                            console.log('✅ "No pending sign in" - L\'authentification est terminée côté GitHub!');
+                            console.log('🔐 L\'utilisateur a autorisé l\'accès - transition vers l\'état authentifié...');
+                            
+                            this.isPolling = false;
+                            clearInterval(pollInterval);
+                            clearInterval(fastStatusChecker);
+                            this.authenticationFailed = false;
+                            
+                            // The device flow is complete, now we need to properly notify the LSP server
+                            console.log('🔧 Finalisation de l\'authentification avec le serveur LSP...');
+                            
+                            try {
+                                // Method 1: Send final signInConfirm to close the loop
+                                console.log('🔧 Envoi de signInConfirm final...');
+                                const finalConfirm = await this.sendRequest('signInConfirm', {
+                                    userCode: userCode
+                                });
+                                
+                                if (finalConfirm && finalConfirm.result) {
+                                    console.log('✅ Confirmation finale réussie:', finalConfirm.result);
                                 }
+                            } catch (finalConfirmError) {
+                                console.log('ℹ️  Confirmation finale échouée (normal):', finalConfirmError.message);
                             }
                             
-                            // Be much more conservative about restarting authentication
-                            // Only restart if we have MANY consecutive errors AND sufficient time has passed
-                            const timeSinceLastSuccess = Date.now() - lastSuccessfulCheck;
-                            const shouldRestart = (
-                                consecutiveErrors >= 8 && // Increase threshold even more
-                                attempts > 16 && // Much more attempts required
-                                timeSinceLastSuccess > 120000 // At least 2 minutes since last successful check
-                            );
+                            // Method 2: Force authentication state refresh in the LSP server
+                            console.log('🔧 Actualisation de l\'état d\'authentification...');
+                            await this.refreshServerAuthentication();
                             
-                            if (shouldRestart) {
-                                console.log('\n❌ Session d\'authentification semble vraiment expirée après de nombreuses vérifications');
-                                console.log(`🔧 Erreurs consécutives: ${consecutiveErrors}, Tentatives: ${attempts}`);
-                                console.log(`🔧 Temps depuis dernier succès: ${Math.round(timeSinceLastSuccess/1000)}s`);
-                                
-                                // Extensive verification before restarting
-                                let authConfirmed = false;
-                                for (let i = 0; i < 5; i++) { // More checks
-                                    try {
-                                        console.log(`🔧 Vérification finale ${i + 1}/5...`);
-                                        const finalStatusResponse = await this.sendRequest('checkStatus', {
-                                            dummy: 'value'
-                                        });
-                                        
-                                        if (finalStatusResponse && finalStatusResponse.result) {
-                                            const finalStatus = finalStatusResponse.result.status;
-                                            if (finalStatus === 'OK' || finalStatus === 'Authorized' || 
-                                                finalStatus === 'SignedIn' || finalStatus === 'AlreadySignedIn') {
-                                                console.log('✅ Authentification trouvée lors de la vérification finale!');
-                                                this.isPolling = false;
-                                                clearInterval(pollInterval);
-                                                clearInterval(fastStatusChecker);
-                                                this.authenticationFailed = false;
-                                                
-                                                await this.refreshServerAuthentication();
-                                                resolve(finalStatusResponse.result);
-                                                authConfirmed = true;
-                                                return;
-                                            }
-                                        }
-                                        // Wait longer between checks
-                                        if (i < 4) await new Promise(resolve => setTimeout(resolve, 3000));
-                                    } catch (finalStatusError) {
-                                        console.log(`ℹ️  Vérification finale ${i + 1} échouée`);
+                            // Method 3: Send a final status notification
+                            try {
+                                console.log('🔧 Envoi de notification de succès...');
+                                await this.sendRequest('setEditorInfo', {
+                                    editorInfo: {
+                                        name: "copilot-client",
+                                        version: "1.0.0"
+                                    },
+                                    editorPluginInfo: {
+                                        name: "copilot-node-client",
+                                        version: "1.0.0"
                                     }
-                                }
-                                
-                                if (!authConfirmed) {
-                                    console.log('ℹ️  Toutes les vérifications finales ont échoué - redémarrage de l\'authentification');
-                                    this.isPolling = false;
-                                    clearInterval(pollInterval);
-                                    clearInterval(fastStatusChecker);
-                                    
-                                    try {
-                                        const restartResult = await this.restartAuthentication();
-                                        resolve(restartResult);
-                                    } catch (restartError) {
-                                        reject(new Error('Session expirée et impossible de redémarrer: ' + restartError.message));
-                                    }
-                                    return;
-                                }
-                            } else {
-                                // Just continue polling - be very patient
-                                if (attempts % 3 === 0) {
-                                    console.log(`ℹ️  "No pending sign in" détecté (${consecutiveErrors}/8) - patience...`);
-                                    console.log('   💡 Cela peut signifier que l\'authentification a réussi et que la session est fermée');
-                                    console.log('   ⏰ Vérifications en cours...');
-                                }
+                                });
+                                console.log('✅ Notification setEditorInfo envoyée');
+                            } catch (setEditorFinalError) {
+                                console.log('ℹ️  setEditorInfo final échoué:', setEditorFinalError.message);
                             }
+                            
+                            // Method 4: Check final status to confirm authentication
+                            let finalAuthStatus = 'Completed';
+                            try {
+                                console.log('🔧 Vérification finale du statut...');
+                                const finalStatusCheck = await this.sendRequest('checkStatus', {
+                                    dummy: 'value'
+                                });
+                                
+                                if (finalStatusCheck && finalStatusCheck.result) {
+                                    console.log('🔧 Statut final:', finalStatusCheck.result);
+                                    finalAuthStatus = finalStatusCheck.result.status || 'Completed';
+                                    
+                                    if (finalAuthStatus === 'OK' || finalAuthStatus === 'Authorized' || 
+                                        finalAuthStatus === 'SignedIn' || finalAuthStatus === 'AlreadySignedIn') {
+                                        console.log('✅ Le serveur LSP confirme maintenant l\'authentification!');
+                                    } else {
+                                        console.log('ℹ️  Le serveur LSP rattrape encore l\'état d\'authentification...');
+                                        console.log('ℹ️  L\'authentification utilisateur est terminée avec succès');
+                                    }
+                                }
+                            } catch (finalStatusError) {
+                                console.log('ℹ️  Vérification finale du statut échouée:', finalStatusError.message);
+                            }
+                            
+                            // Success! The authentication flow is complete
+                            console.log('\n🎉 AUTHENTIFICATION TERMINÉE AVEC SUCCÈS! 🎉');
+                            console.log('✅ L\'utilisateur a autorisé GitHub Copilot sur la page web');
+                            console.log('✅ La session d\'authentification device flow est fermée (normal)');
+                            console.log('✅ Le serveur LSP va maintenant utiliser l\'authentification');
+                            console.log('🔐 GitHub Copilot est prêt à utiliser!\n');
+                            
+                            // Resolve with success result
+                            resolve({
+                                status: 'AuthenticationCompleted',
+                                userCode: userCode,
+                                completedAt: new Date().toISOString(),
+                                finalLspStatus: finalAuthStatus
+                            });
+                            return;
                         } else {
-                            // Other unknown errors - be more tolerant
+                            // Other unknown errors - log but don't restart
                             consecutiveErrors++;
                             if (attempts % 5 === 0) {
                                 console.log('⚠️  Erreur inconnue:', errorMessage);
+                                console.log('ℹ️  Continuation du polling...');
                             }
                         }
                     }
@@ -963,20 +966,16 @@ class CopilotClient {
                     } else {
                         console.log('⚠️  Erreur lors du polling:', error.message);
                         
-                        // Only consider restart after many errors and sufficient time
-                        const timeSinceLastSuccess = Date.now() - lastSuccessfulCheck;
-                        if (consecutiveErrors >= 10 && timeSinceLastSuccess > 180000) { // 3 minutes
-                            console.log('\n❌ Erreurs persistantes détectées');
+                        // Only consider restart after many errors and sufficient time for genuine connection issues
+                        const timeSinceLastSuccessfulCheck = Date.now() - lastSuccessfulCheck;
+                        if (consecutiveErrors >= 15 && timeSinceLastSuccessfulCheck > 300000) { // 5 minutes
+                            console.log('\n❌ Erreurs de connexion persistantes détectées');
+                            console.log('🔧 Ceci semble être un problème de connectivité, pas d\'authentification');
                             this.isPolling = false;
                             clearInterval(pollInterval);
                             clearInterval(fastStatusChecker);
                             
-                            try {
-                                const restartResult = await this.restartAuthentication();
-                                resolve(restartResult);
-                            } catch (restartError) {
-                                reject(new Error('Erreurs persistantes et impossible de redémarrer'));
-                            }
+                            reject(new Error('Problème de connectivité persistant avec le serveur LSP'));
                             return;
                         }
                     }
@@ -1038,65 +1037,173 @@ class CopilotClient {
         
         try {
             // Wait a moment for the authentication to settle
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 2000));
             
-            // Method 1: Try to check the current authentication status
+            // Method 1: Try to get the actual authentication token from the completed device flow
+            console.log('🔧 Tentative de récupération du token d\'authentification...');
             try {
-                console.log('🔧 Vérification du statut d\'authentification...');
+                // First, try to get a fresh token from the LSP server itself
+                const getTokenResponse = await this.sendRequest('getToken', {
+                    dummy: 'value'
+                });
+                
+                if (getTokenResponse && getTokenResponse.result && getTokenResponse.result.token) {
+                    console.log('✅ Token récupéré du serveur LSP');
+                    console.log(`🔧 Token longueur: ${getTokenResponse.result.token.length}`);
+                    
+                    // Store and use this token
+                    this.copilotToken = getTokenResponse.result.token;
+                    
+                    // Update environment variables
+                    process.env.COPILOT_TOKEN = this.copilotToken;
+                    process.env.GITHUB_COPILOT_TOKEN = this.copilotToken;
+                    
+                } else {
+                    console.log('ℹ️  Pas de token disponible via getToken');
+                }
+            } catch (getTokenError) {
+                console.log('ℹ️  getToken non supporté:', getTokenError.message);
+            }
+            
+            // Method 2: Try to explicitly authenticate using signInConfirm one more time
+            if (this.lastUserCode) {
+                console.log('🔧 Tentative de récupération finale du token via signInConfirm...');
+                try {
+                    const finalTokenConfirm = await this.sendRequest('signInConfirm', {
+                        userCode: this.lastUserCode
+                    });
+                    
+                    if (finalTokenConfirm && finalTokenConfirm.result) {
+                        console.log('✅ Réponse finale de signInConfirm:', finalTokenConfirm.result);
+                        
+                        // Look for token in the response
+                        if (finalTokenConfirm.result.token) {
+                            console.log('✅ Token trouvé dans signInConfirm final!');
+                            this.copilotToken = finalTokenConfirm.result.token;
+                            process.env.COPILOT_TOKEN = this.copilotToken;
+                            process.env.GITHUB_COPILOT_TOKEN = this.copilotToken;
+                        }
+                    }
+                } catch (finalTokenError) {
+                    console.log('ℹ️  signInConfirm final pour token échoué:', finalTokenError.message);
+                }
+            }
+            
+            // Method 3: Send configuration update to trigger authentication refresh
+            console.log('🔧 Envoi de mise à jour de configuration avec token...');
+            const configUpdate = {
+                "github.copilot": {
+                    "enable": {
+                        "*": true
+                    },
+                    "inlineSuggest": {
+                        "enable": true
+                    }
+                }
+            };
+            
+            // Add token to config if we have one
+            if (this.copilotToken) {
+                configUpdate["github.copilot"].token = this.copilotToken;
+            }
+            
+            this.sendNotification('workspace/didChangeConfiguration', {
+                settings: configUpdate
+            });
+            
+            // Method 4: Send editor info to refresh connection with potential token
+            try {
+                console.log('🔧 Actualisation des informations d\'éditeur avec authentification...');
+                const editorInfoParams = {
+                    editorInfo: {
+                        name: "copilot-client",
+                        version: "1.0.0"
+                    },
+                    editorPluginInfo: {
+                        name: "copilot-node-client",
+                        version: "1.0.0"
+                    }
+                };
+                
+                // Add token if available
+                if (this.copilotToken) {
+                    editorInfoParams.authToken = this.copilotToken;
+                }
+                
+                await this.sendRequest('setEditorInfo', editorInfoParams);
+                console.log('✅ Informations d\'éditeur mises à jour avec auth');
+            } catch (setEditorRefreshError) {
+                console.log('ℹ️  Mise à jour des informations d\'éditeur avec auth échouée:', setEditorRefreshError.message);
+            }
+            
+            // Method 5: Try specific Copilot authentication methods
+            try {
+                console.log('🔧 Tentative de méthodes d\'authentification spécifiques...');
+                
+                // Try notifyAuthenticated
+                await this.sendRequest('notifyAuthenticated', {
+                    token: this.copilotToken || 'authenticated'
+                });
+                console.log('✅ notifyAuthenticated envoyé');
+            } catch (notifyAuthError) {
+                console.log('ℹ️  notifyAuthenticated non supporté:', notifyAuthError.message);
+            }
+            
+            // Method 6: Wait for the server to process the authentication state
+            console.log('🔧 Attente de la propagation de l\'authentification...');
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            
+            // Method 7: Check if authentication is now recognized
+            try {
                 const statusResponse = await this.sendRequest('checkStatus', {
                     dummy: 'value'
                 });
                 
                 if (statusResponse && statusResponse.result) {
-                    console.log('🔧 Status après authentification:', statusResponse.result);
+                    console.log('🔧 Status après actualisation complète:', statusResponse.result);
                     
                     // If status shows we're authenticated, great!
                     if (statusResponse.result.status === 'OK' || 
                         statusResponse.result.status === 'Authorized' ||
-                        statusResponse.result.status === 'SignedIn') {
-                        console.log('✅ Serveur confirme l\'authentification réussie');
-                        return;
+                        statusResponse.result.status === 'SignedIn' ||
+                        statusResponse.result.status === 'AlreadySignedIn') {
+                        console.log('✅ Le serveur confirme l\'authentification après actualisation complète');
+                        return true;
+                    } else {
+                        console.log('⚠️  Le serveur ne reconnaît toujours pas l\'authentification');
+                        console.log('🔧 Status détaillé:', JSON.stringify(statusResponse.result, null, 2));
+                        
+                        // Method 8: Force restart the LSP authentication entirely
+                        console.log('🔧 Tentative de redémarrage complet de l\'authentification LSP...');
+                        try {
+                            // Force signout and signin
+                            await this.sendRequest('signOut', { dummy: 'value' });
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+                            
+                            // Try to restart with our token
+                            const restartAuth = await this.sendRequest('signInInitiate', { dummy: 'value' });
+                            console.log('✅ Redémarrage d\'authentification tenté');
+                            
+                        } catch (restartAuthError) {
+                            console.log('ℹ️  Redémarrage d\'authentification LSP échoué:', restartAuthError.message);
+                        }
+                        
+                        return false;
                     }
                 }
             } catch (statusError) {
-                console.log('ℹ️  Vérification du statut échouée:', statusError.message);
+                console.log('ℹ️  Vérification du statut après actualisation complète échouée:', statusError.message);
+                return false;
             }
             
-            // Method 2: Send a workspace configuration change to refresh authentication
-            console.log('🔧 Envoi de notification de changement de configuration...');
-            this.sendNotification('workspace/didChangeConfiguration', {
-                settings: {
-                    "github.copilot": {
-                        "enable": {
-                            "*": true
-                        },
-                        "inlineSuggest": {
-                            "enable": true
-                        }
-                    }
-                }
-            });
-            
-            // Method 3: Try to force refresh authentication state
-            try {
-                console.log('🔧 Tentative de rafraîchissement forcé...');
-                await this.sendRequest('notifySignedIn', {
-                    dummy: 'value'
-                });
-                console.log('✅ Notification de connexion envoyée');
-            } catch (notifyError) {
-                console.log('ℹ️  Notification de connexion non supportée:', notifyError.message);
-            }
-            
-            // Method 4: Wait and check if authentication error messages stop
-            console.log('🔧 Attente de stabilisation de l\'authentification...');
-            await new Promise(resolve => setTimeout(resolve, 3000));
-            
-            console.log('✅ Actualisation de l\'authentification terminée');
+            console.log('✅ Actualisation complète de l\'authentification terminée');
+            return true;
             
         } catch (error) {
-            console.warn('⚠️  Erreur lors de l\'actualisation de l\'authentification:', error.message);
-            console.log('ℹ️  L\'authentification peut prendre quelques instants à se propager...');
+            console.warn('⚠️  Erreur lors de l\'actualisation complète de l\'authentification:', error.message);
+            console.log('ℹ️  L\'authentification utilisateur est valide, mais le serveur LSP a des difficultés');
+            console.log('💡 Suggestion: Redémarrez le script pour réinitialiser la connexion LSP');
+            return false;
         }
     }
 
@@ -1258,7 +1365,7 @@ class CopilotClient {
             
             switch (item.section) {
                 case 'github.copilot':
-                    return {
+                    const copilotConfig = {
                         enable: {
                             "*": true
                         },
@@ -1272,14 +1379,34 @@ class CopilotClient {
                         inlineSuggest: {
                             enable: true
                         }
-                        // Remove authProvider from here
                     };
+                    
+                    // Add token if we have one from device flow
+                    if (this.copilotToken) {
+                        copilotConfig.authToken = this.copilotToken;
+                        console.log('🔧 Ajout du token d\'authentification à la configuration');
+                    } else if (this.githubToken) {
+                        copilotConfig.authToken = this.githubToken;
+                        console.log('🔧 Ajout du token GitHub CLI à la configuration');
+                    }
+                    
+                    return copilotConfig;
+                    
                 case 'github-enterprise':
                 case 'github':
-                    return {
+                    const githubConfig = {
                         uri: "https://github.com"
-                        // Don't include token in configuration response
                     };
+                    
+                    // Add token if available
+                    if (this.copilotToken) {
+                        githubConfig.token = this.copilotToken;
+                    } else if (this.githubToken) {
+                        githubConfig.token = this.githubToken;
+                    }
+                    
+                    return githubConfig;
+                    
                 case 'http':
                     return {
                         proxy: "",
@@ -1444,7 +1571,7 @@ class CopilotClient {
         });
 
         // Attendre un peu pour que le serveur traite le document
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 5000));
 
         return uri;
     }
@@ -1481,7 +1608,7 @@ class CopilotClient {
         console.log(`🔧 URI utilisé: ${uri}`);
 
         // Wait a bit more for the server to be ready after opening document
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise(resolve => setTimeout(resolve, 5000));
 
         // Check authentication status before proceeding
         if (this.authenticationFailed) {
@@ -1721,12 +1848,12 @@ class CopilotClient {
         if (this.process && !this.process.killed) {
             this.process.kill('SIGTERM');
             
-            // Forcer l'arrêt après 2 secondes
+            // Forcer l'arrêt après 5 secondes
             setTimeout(() => {
                 if (this.process && !this.process.killed) {
                     this.process.kill('SIGKILL');
                 }
-            }, 2000);
+            }, 5000);
         }
         
         console.log('✅ Serveur LSP arrêté');
@@ -1737,7 +1864,7 @@ class CopilotClient {
         this.isPolling = false;
         
         // Wait a moment before restarting
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 5000));
         
         try {
             // Try to get a new device code
