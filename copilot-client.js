@@ -1,59 +1,97 @@
 #!/usr/bin/env node
 
+process.removeAllListeners('warning');
+process.on('warning', (warning) => {
+    if (!warning.message.includes('DEP0132') && 
+        !warning.message.includes('Passing a callback to worker.terminate()')) {
+        console.warn(warning.message);
+    }
+});
+
 const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { promisify } = require('util');
 const exec = promisify(require('child_process').exec);
 
+// Create src/core directory if it doesn't exist
+const coreDir = path.join(__dirname, 'src', 'core');
+if (!fs.existsSync(coreDir)) {
+    fs.mkdirSync(coreDir, { recursive: true });
+}
+
+// Import FeatureAnalyzer if available, otherwise create inline
+let FeatureAnalyzer;
+try {
+    FeatureAnalyzer = require('./src/core/FeatureAnalyzer');
+} catch (error) {
+    // Fallback inline implementation
+    FeatureAnalyzer = class {
+        constructor(verbose) { this.verbose = verbose; }
+        analyzeFeatureFlags(flags) {
+            console.log('\n🔍 Feature Flags Received:');
+            Object.entries(flags).forEach(([key, value]) => {
+                console.log(`   ${key}: ${JSON.stringify(value)}`);
+            });
+            return { enabled: [], disabled: [], experimental: [] };
+        }
+        handlePreconditions() {
+            console.log('🔧 Preconditions notification received');
+        }
+    };
+}
+
 class CopilotClient {
-    constructor() {
+    constructor(verbose = false) {
         this.process = null;
         this.requestId = 1;
         this.pendingRequests = new Map();
         this.isInitialized = false;
         this.serverPath = null;
+        this.verbose = verbose;
+        this.featureAnalyzer = new FeatureAnalyzer(verbose);
+    }
+
+    log(message, force = false) {
+        if (this.verbose || force) {
+            console.log(message);
+        }
     }
 
     async checkDependencies() {
         try {
-            // Check if copilot-language-server is available and get its path
             const { stdout } = await exec('which copilot-language-server');
             let serverPath = stdout.trim();
-            console.log('🔧 Chemin original trouvé:', serverPath);
+            this.log(`🔧 Chemin original trouvé: ${serverPath}`);
             
-            // Convert Unix-style path to Windows path if needed
             if (process.platform === 'win32' && serverPath.startsWith('/')) {
-                // Convert /c/Users/... to C:/Users/...
                 serverPath = serverPath.replace(/^\/([a-zA-Z])\//, '$1:/').replace(/\//g, '\\');
-                console.log('🔧 Chemin converti:', serverPath);
+                this.log(`🔧 Chemin converti: ${serverPath}`);
             }
             
             this.serverPath = serverPath;
-            console.log('✅ copilot-language-server trouvé:', this.serverPath);
+            this.log(`✅ copilot-language-server trouvé: ${this.serverPath}`);
             
-            // Verify the converted path exists
             if (process.platform === 'win32') {
                 if (!fs.existsSync(this.serverPath)) {
-                    console.log('⚠️  Chemin converti non trouvé, tentative avec where command...');
+                    this.log('⚠️  Chemin converti non trouvé, tentative avec where command...');
                     try {
                         const { stdout: whereOutput } = await exec('where copilot-language-server');
                         this.serverPath = whereOutput.trim().split('\n')[0];
-                        console.log('✅ Nouveau chemin trouvé avec where:', this.serverPath);
+                        this.log(`✅ Nouveau chemin trouvé avec where: ${this.serverPath}`);
                     } catch (whereError) {
-                        console.log('❌ where command failed:', whereError.message);
-                        // Try alternative: look for the .cmd file
+                        this.log(`❌ where command failed: ${whereError.message}`);
                         const possibleCmdPath = serverPath.replace(/\.js$/, '.cmd');
-                        console.log('🔧 Tentative avec .cmd:', possibleCmdPath);
+                        this.log(`🔧 Tentative avec .cmd: ${possibleCmdPath}`);
                         if (fs.existsSync(possibleCmdPath)) {
                             this.serverPath = possibleCmdPath;
-                            console.log('✅ Fichier .cmd trouvé:', this.serverPath);
+                            this.log(`✅ Fichier .cmd trouvé: ${this.serverPath}`);
                         } else {
-                            console.log('⚠️  Continuons avec le chemin original malgré l\'absence du fichier');
+                            this.log('⚠️  Continuons avec le chemin original malgré l\'absence du fichier');
                         }
                     }
                 } else {
-                    console.log('✅ Chemin converti vérifié et trouvé');
+                    this.log('✅ Chemin converti vérifié et trouvé');
                 }
             }
         } catch (error) {
@@ -63,152 +101,8 @@ class CopilotClient {
             throw new Error('copilot-language-server non disponible');
         }
 
-        try {
-            // Check GitHub authentication with more detailed validation
-            console.log('🔧 Vérification de l\'authentification GitHub CLI...');
-            const { stdout, stderr } = await exec('gh auth status', { encoding: 'utf8' });
-            console.log('✅ Authentification GitHub CLI OK');
-            console.log('GitHub CLI status:', stdout);
-            
-            // Get and validate GitHub token for Copilot
-            try {
-                const { stdout: tokenOutput } = await exec('gh auth token');
-                let token = tokenOutput.trim();
-                
-                if (!token) {
-                    throw new Error('Token vide');
-                }
-                
-                console.log('✅ Token GitHub CLI disponible (longueur:', token.length, ')');
-                console.log('🔧 Début du token:', token.substring(0, 8) + '...');
-                
-                // Validate token format and potentially convert it
-                if (token.startsWith('gho_')) {
-                    console.log('✅ Token OAuth détecté');
-                } else if (token.startsWith('ghp_')) {
-                    console.log('✅ Token Personal Access détecté');
-                } else if (token.startsWith('github_pat_')) {
-                    console.log('✅ Token PAT Fine-grained détecté');
-                } else if (token.startsWith('ghs_')) {
-                    console.log('✅ Token Server-to-server détecté');
-                } else {
-                    console.warn('⚠️  Format de token non reconnu, continuons quand même');
-                }
-                
-                // Store the original token
-                this.githubToken = token;
-                
-                // Set comprehensive environment variables for all possible authentication methods
-                process.env.GITHUB_TOKEN = token;
-                process.env.GITHUB_ACCESS_TOKEN = token;
-                process.env.COPILOT_TOKEN = token;
-                process.env.GH_TOKEN = token;
-                process.env.GITHUB_COPILOT_TOKEN = token;
-                
-                // Also try to get user info to verify token validity
-                try {
-                    const { stdout: userInfo } = await exec('gh api user');
-                    const user = JSON.parse(userInfo);
-                    console.log(`✅ Token valide pour l'utilisateur: ${user.login}`);
-                    process.env.GITHUB_USER = user.login;
-                    process.env.GITHUB_LOGIN = user.login;
-                    this.githubUser = user.login;
-                } catch (userError) {
-                    console.warn('⚠️  Impossible de vérifier les informations utilisateur:', userError.message);
-                    // Try alternative user info method
-                    try {
-                        const { stdout: altUserInfo } = await exec('gh api user --jq .login');
-                        const login = altUserInfo.trim();
-                        if (login) {
-                            console.log(`✅ Login utilisateur récupéré: ${login}`);
-                            process.env.GITHUB_USER = login;
-                            process.env.GITHUB_LOGIN = login;
-                            this.githubUser = login;
-                        }
-                    } catch (altError) {
-                        console.warn('⚠️  Méthode alternative échouée aussi');
-                    }
-                }
-                
-                // Test Copilot API access directly with the token
-                try {
-                    console.log('🔧 Test direct de l\'API Copilot...');
-                    const testResult = await exec(`gh api -H "Authorization: Bearer ${token}" -H "Accept: application/vnd.github+json" user/copilot/billing`);
-                    console.log('✅ Test API Copilot réussi');
-                } catch (testError) {
-                    console.warn('⚠️  Test API Copilot échoué:', testError.message);
-                    if (testError.stderr && testError.stderr.includes('404')) {
-                        console.log('ℹ️  404 peut indiquer Copilot Business (normal)');
-                    }
-                }
-                
-            } catch (tokenError) {
-                console.error('❌ Impossible de récupérer le token GitHub CLI:', tokenError.message);
-                console.log('🔧 Tentative de rafraîchissement du token...');
-                
-                try {
-                    // Force refresh with all scopes
-                    await exec('gh auth refresh --scopes "read:user,user:email,repo,workflow,copilot"');
-                    console.log('✅ Tentative de rafraîchissement terminée');
-                    
-                    // Retry getting token
-                    const { stdout: newTokenOutput } = await exec('gh auth token');
-                    const newToken = newTokenOutput.trim();
-                    
-                    if (!newToken) {
-                        throw new Error('Token toujours vide après rafraîchissement');
-                    }
-                    
-                    // Store and set all environment variables again
-                    this.githubToken = newToken;
-                    process.env.GITHUB_TOKEN = newToken;
-                    process.env.GITHUB_ACCESS_TOKEN = newToken;
-                    process.env.COPILOT_TOKEN = newToken;
-                    process.env.GH_TOKEN = newToken;
-                    process.env.GITHUB_COPILOT_TOKEN = newToken;
-                    
-                    console.log('✅ Token rafraîchi avec succès (longueur:', newToken.length, ')');
-                } catch (refreshError) {
-                    console.error('❌ Échec du rafraîchissement du token:', refreshError.message);
-                    throw new Error('Token GitHub CLI non disponible - authentification requise');
-                }
-            }
-            
-        } catch (error) {
-            console.error('❌ Authentification GitHub CLI requise');
-            console.log('🔧 Connectez-vous avec toutes les permissions:');
-            console.log('   gh auth logout');
-            console.log('   gh auth login --scopes "read:user,user:email,repo,workflow,copilot"');
-            console.log('   ou si déjà connecté: gh auth refresh --scopes "read:user,user:email,repo,workflow,copilot"');
-            throw new Error('Authentification GitHub CLI requise');
-        }
-
-        // Vérifier l'accès à Copilot avec validation améliorée
-        try {
-           console.log('🔧 Vérification de l\'accès GitHub Copilot...');
-           const { stdout } = await exec('gh api user/copilot/billing');
-           const billing = JSON.parse(stdout);
-           console.log('✅ Copilot access OK - Plan:', billing.plan || 'unknown');
-        } catch (error) {
-            console.warn('⚠️  Erreur lors de la vérification Copilot:', error.message);
-            if (error.stderr && error.stderr.includes('404')) {
-                console.warn('⚠️  API billing non disponible (possiblement Copilot Business)');
-                
-                // Try alternative Copilot validation
-                try {
-                    await exec('gh api user/copilot/licenses');
-                    console.log('✅ Accès Copilot confirmé via API licenses');
-                } catch (licenseError) {
-                    console.warn('⚠️  API licenses aussi inaccessible - continuons quand même');
-                }
-            } else {
-                console.warn('⚠️  Vérification Copilot échouée - continuons quand même');
-                console.log('🔧 Si vous rencontrez des problèmes:');
-                console.log('   1. Vérifiez votre abonnement: https://github.com/settings/copilot');
-                console.log('   2. Rafraîchissez: gh auth refresh --scopes "copilot"');
-                console.log('   3. Reconnectez-vous avec les bons scopes');
-            }
-        }
+        this.log('✅ Dépendances vérifiées - copilot-language-server disponible');
+        this.log('💡 Assurez-vous d\'être authentifié avec: node copilot-auth.js');
     }
 
     async start() {
@@ -220,92 +114,48 @@ class CopilotClient {
                 return;
             }
 
-            console.log('🚀 Démarrage du serveur Copilot LSP...');
-            console.log('🔧 Chemin du serveur à utiliser:', this.serverPath);
+            this.log('🚀 Démarrage du serveur Copilot LSP...');
+            this.log(`🔧 Chemin du serveur à utiliser: ${this.serverPath}`);
             
-            // Enhanced environment setup with all possible authentication variables
             const env = {
                 ...process.env,
-                // Core GitHub tokens
-                GITHUB_TOKEN: process.env.GITHUB_TOKEN,
-                GITHUB_ACCESS_TOKEN: process.env.GITHUB_TOKEN, // Fix typo: was GITHUB_ACCESS_TOKEN_TOKEN
-                GH_TOKEN: process.env.GITHUB_TOKEN,
-                
-                // Copilot-specific tokens
-                COPILOT_TOKEN: process.env.GITHUB_TOKEN,
-                GITHUB_COPILOT_TOKEN: process.env.GITHUB_TOKEN,
-                
-                // User information
-                GITHUB_USER: process.env.GITHUB_USER,
-                GITHUB_LOGIN: process.env.GITHUB_LOGIN,
-                
-                // Authentication method hints
-                GITHUB_COPILOT_AUTH_METHOD: 'token',
-                GITHUB_COPILOT_AUTH_PROVIDER: 'github',
-                
-                // Force specific behavior
                 NODE_ENV: 'production',
                 FORCE_COLOR: '0',
-                
-                // Additional environment hints that might help
-                XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME || path.join(require('os').homedir(), '.config'),
-                HOME: process.env.HOME || require('os').homedir()
+                HOME: process.env.HOME || require('os').homedir(),
+                NODE_NO_WARNINGS: '1'
             };
             
-            // Log environment variables (without showing token values)
-            console.log('🔧 Variables d\'environnement configurées:');
-            console.log('   GITHUB_TOKEN:', env.GITHUB_TOKEN ? `[${env.GITHUB_TOKEN.length} chars]` : 'undefined');
-            console.log('   GITHUB_USER:', env.GITHUB_USER || 'undefined');
-            console.log('   HOME:', env.HOME);
+            this.log('🔧 Variables d\'environnement configurées:');
+            this.log(`   HOME: ${env.HOME}`);
             
-            // Improved Windows/Cygwin compatibility - avoid shell argument deprecation
             const attempts = [
-                // 1. Use npm global command (most reliable)
+                // ...existing code...
                 () => {
-                    console.log('🔧 Tentative 1: Via npx');
+                    this.log('🔧 Tentative 1: Via npx');
                     return spawn('npx', ['copilot-language-server', '--stdio'], {
                         stdio: ['pipe', 'pipe', 'pipe'],
                         env: env,
                         shell: true
                     });
                 },
-                // 2. Use command name with shell
                 () => {
-                    console.log('🔧 Tentative 2: Nom de commande avec shell');
+                    this.log('🔧 Tentative 2: Nom de commande avec shell');
                     return spawn('copilot-language-server', ['--stdio'], {
                         stdio: ['pipe', 'pipe', 'pipe'],
                         env: env,
                         shell: true
                     });
                 },
-                // 3. Use node to run the .js file directly
                 () => {
-                    console.log('🔧 Tentative 3: Via node direct');
+                    this.log('🔧 Tentative 3: Via node direct');
                     return spawn('node', [this.serverPath, '--stdio'], {
                         stdio: ['pipe', 'pipe', 'pipe'],
                         env: env
                     });
                 },
-                // 4. Use cmd.exe with proper escaping (Windows)
                 () => {
-                    console.log('🔧 Tentative 4: Via cmd.exe avec échappement');
-                    return spawn('cmd', ['/c', '"' + this.serverPath + '"', '--stdio'], {
-                        stdio: ['pipe', 'pipe', 'pipe'],
-                        env: env
-                    });
-                },
-                // 5. Direct execution without shell (Windows)
-                () => {
-                    console.log('🔧 Tentative 5: Exécution directe');
+                    this.log('🔧 Tentative 4: Exécution directe');
                     return spawn(this.serverPath, ['--stdio'], {
-                        stdio: ['pipe', 'pipe', 'pipe'],
-                        env: env
-                    });
-                },
-                // 6. Try PowerShell with proper command
-                () => {
-                    console.log('🔧 Tentative 6: Via PowerShell');
-                    return spawn('powershell', ['-Command', `& "${this.serverPath}" --stdio`], {
                         stdio: ['pipe', 'pipe', 'pipe'],
                         env: env
                     });
@@ -318,10 +168,9 @@ class CopilotClient {
                 try {
                     this.process = attempts[i]();
                     
-                    // Wait a bit to see if the process starts successfully
                     await new Promise((resolveWait, rejectWait) => {
                         const timeout = setTimeout(() => {
-                            resolveWait(); // Success if no immediate error
+                            resolveWait();
                         }, 5000);
 
                         this.process.on('error', (error) => {
@@ -332,16 +181,15 @@ class CopilotClient {
 
                         this.process.on('spawn', () => {
                             clearTimeout(timeout);
-                            resolveWait(); // Success
+                            resolveWait();
                         });
                     });
 
-                    // If we get here, the process started successfully
-                    console.log('✅ Serveur démarré avec succès');
+                    this.log('✅ Serveur démarré avec succès');
                     break;
                     
                 } catch (error) {
-                    console.log(`❌ Tentative ${i + 1} échouée:`, error.message);
+                    this.log(`❌ Tentative ${i + 1} échouée: ${error.message}`);
                     lastError = error;
                     
                     if (this.process) {
@@ -352,14 +200,12 @@ class CopilotClient {
                         }
                         this.process = null;
                     }
-                    
-                    // Try next approach
                     continue;
                 }
             }
 
             if (!this.process) {
-                console.error('❌ Toutes les tentatives ont échoué');
+                console.error('❌ Impossible de démarrer le serveur Copilot');
                 reject(lastError || new Error('Impossible de démarrer le serveur'));
                 return;
             }
@@ -371,12 +217,11 @@ class CopilotClient {
 
             this.process.stderr.on('data', (data) => {
                 const message = data.toString().trim();
-                if (message) {
-                    console.log('LSP stderr:', message);
+                if (message && !message.includes('DEP0132') && !message.includes('worker.terminate()')) {
+                    this.log(`LSP stderr: ${message}`);
                 }
             });
 
-            // Parser les réponses LSP
             let buffer = '';
             this.process.stdout.on('data', (data) => {
                 buffer += data.toString();
@@ -406,12 +251,11 @@ class CopilotClient {
                         this.handleMessage(message);
                     } catch (error) {
                         console.error('❌ Erreur de parsing JSON:', error);
-                        console.error('Message brut:', messageContent);
+                        this.log(`Message brut: ${messageContent}`);
                     }
                 }
             });
 
-            // Initialiser le serveur
             try {
                 await this.initialize();
                 resolve();
@@ -422,9 +266,10 @@ class CopilotClient {
     }
 
     async initialize() {
-        console.log('🔧 Initialisation du serveur LSP...');
+        this.log('🔧 Initialisation du serveur LSP...');
         
         const initParams = {
+            // ...existing code...
             processId: process.pid,
             rootUri: `file://${process.cwd().replace(/\\/g, '/')}`,
             capabilities: {
@@ -465,7 +310,6 @@ class CopilotClient {
                     name: "copilot-node-client", 
                     version: "1.0.0"
                 }
-                // Remove direct token passing from initialization
             },
             workspaceFolders: [{
                 uri: `file://${process.cwd().replace(/\\/g, '/')}`,
@@ -479,23 +323,11 @@ class CopilotClient {
             throw new Error(`Erreur d'initialisation: ${response.error.message}`);
         }
 
-        console.log('🔧 Capacités du serveur:', JSON.stringify(response.result.capabilities, null, 2));
+        this.log(`🔧 Capacités du serveur: ${JSON.stringify(response.result.capabilities, null, 2)}`);
 
-        // Send initialized notification
         this.sendNotification('initialized', {});
+        await new Promise(resolve => setTimeout(resolve, 3000));
         
-        // Wait a bit before sending configuration
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        
-        // Send Copilot-specific authentication through signInInitiate
-        console.log('🔧 Initiation de l\'authentification Copilot...');
-        try {
-            await this.initiateCopilotSignIn();
-        } catch (authError) {
-            console.warn('⚠️  Erreur lors de l\'authentification Copilot:', authError.message);
-        }
-        
-        // Send additional configuration for authentication
         this.sendNotification('workspace/didChangeConfiguration', {
             settings: {
                 "github.copilot": {
@@ -512,699 +344,9 @@ class CopilotClient {
         this.isInitialized = true;
         this.serverCapabilities = response.result.capabilities;
         
-        console.log('✅ Serveur LSP initialisé');
+        this.log('✅ Serveur LSP initialisé');
+        this.log('💡 Authentification gérée par copilot-auth.js');
         return response.result;
-    }
-
-    async initiateCopilotSignIn() {
-        console.log('🔑 Initiation de la connexion GitHub Copilot...');
-        
-        try {
-            // Method 1: Try signInInitiate (Copilot-specific authentication)
-            const signInResponse = await this.sendRequest('signInInitiate', {
-                dummy: 'value'
-            });
-            
-            if (signInResponse && !signInResponse.error) {
-                console.log('✅ signInInitiate réussi');
-                
-                // If we have a verification URI and user code, show them
-                if (signInResponse.result && signInResponse.result.verificationUri) {
-                    console.log('\n🔗 AUTHENTIFICATION GITHUB COPILOT REQUISE 🔗');
-                    console.log('═'.repeat(60));
-                    console.log('🌐 Ouvrez cette URL dans votre navigateur:');
-                    console.log(`   ${signInResponse.result.verificationUri}`);
-                    console.log('');
-                    console.log('🔑 Saisissez ce code sur la page GitHub:');
-                    console.log(`   ${signInResponse.result.userCode}`);
-                    console.log('');
-                    console.log(`⏱️  Code valide pendant: ${Math.floor(signInResponse.result.expiresIn / 60)} minutes`);
-                    console.log('');
-                    console.log('📋 Étapes à suivre:');
-                    console.log('   1. Cliquez sur le lien ci-dessus ou copiez-le dans votre navigateur');
-                    console.log('   2. Connectez-vous à GitHub si nécessaire');
-                    console.log('   3. Saisissez le code utilisateur affiché ci-dessus');
-                    console.log('   4. Autorisez l\'accès à GitHub Copilot');
-                    console.log('   5. Revenez à ce terminal - l\'authentification se poursuivra automatiquement');
-                    console.log('═'.repeat(60));
-                    console.log('⏳ Attente de votre authentification...');
-                    console.log('');
-                    
-                    // Poll for authentication completion with retry logic
-                    let authResult = null;
-                    let retryCount = 0;
-                    const maxRetries = 3;
-                    
-                    while (retryCount < maxRetries) {
-                        try {
-                            authResult = await this.pollForAuthentication(
-                                signInResponse.result.userCode, 
-                                signInResponse.result.interval || 5, 
-                                signInResponse.result.expiresIn
-                            );
-                            
-                            // If we get a restart result, it means a new flow was initiated
-                            if (authResult && authResult.status === 'Restarted') {
-                                console.log('✅ Authentification redémarrée avec succès');
-                                break;
-                            } else if (authResult) {
-                                console.log('✅ Authentification terminée avec succès');
-                                break;
-                            }
-                        } catch (pollError) {
-                            retryCount++;
-                            console.error(`❌ Tentative ${retryCount}/${maxRetries} échouée:`, pollError.message);
-                            
-                            if (retryCount >= maxRetries) {
-                                console.error('❌ Toutes les tentatives d\'authentification ont échoué');
-                                throw pollError;
-                            } else {
-                                console.log('🔄 Nouvelle tentative dans 5 secondes...');
-                                await new Promise(resolve => setTimeout(resolve, 5000));
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (error) {
-            this.isPolling = false;
-            console.log('ℹ️  signInInitiate non disponible ou échoué:', error.message);
-            
-            // Method 2: Try setEditorInfo with authentication (remove authProvider parameter)
-            try {
-                await this.sendRequest('setEditorInfo', {
-                    editorInfo: {
-                        name: "copilot-client",
-                        version: "1.0.0"
-                    },
-                    editorPluginInfo: {
-                        name: "copilot-node-client",
-                        version: "1.0.0"
-                    }
-                    // Remove authProvider and githubToken - these are not supported
-                });
-                console.log('✅ setEditorInfo envoyé');
-            } catch (setEditorError) {
-                console.log('ℹ️  setEditorInfo échoué:', setEditorError.message);
-            }
-            
-            // Method 3: Try checkStatus to see if we're already authenticated
-            try {
-                const statusResponse = await this.sendRequest('checkStatus', {
-                    dummy: 'value'
-                });
-                
-                if (statusResponse && statusResponse.result) {
-                    console.log('🔧 Status Copilot:', statusResponse.result);
-                    
-                    // If already authenticated, great!
-                    if (statusResponse.result.status === 'OK' || 
-                        statusResponse.result.status === 'Authorized' ||
-                        statusResponse.result.status === 'SignedIn' ||
-                        statusResponse.result.status === 'AlreadySignedIn') {
-                        console.log('✅ Authentification déjà active détectée!');
-                        this.authenticationFailed = false;
-                    }
-                }
-            } catch (statusError) {
-                console.log('ℹ️  checkStatus échoué:', statusError.message);
-            }
-        } finally {
-            this.isPolling = false;
-        }
-    }
-
-    async pollForAuthentication(userCode, interval = 5, expiresIn = 900) {
-        const maxAttempts = Math.floor(expiresIn / interval);
-        let attempts = 0;
-        let consecutiveErrors = 0;
-        let lastSuccessfulCheck = Date.now();
-        
-        // Store the user code for later use in refresh
-        this.lastUserCode = userCode;
-        
-        console.log(`🔄 Polling d'authentification toutes les ${interval} secondes (max ${maxAttempts} tentatives)...`);
-        
-        // Set polling flag to reduce log noise
-        this.isPolling = true;
-        
-        return new Promise((resolve, reject) => {
-            const poll = async () => {
-                attempts++;
-                
-                try {
-                    console.log(`🔄 Tentative ${attempts}/${maxAttempts} - Vérification de l'authentification...`);
-                    
-                    // Check if we should stop polling
-                    if (attempts > maxAttempts) {
-                        console.log('❌ Timeout d\'authentification atteint');
-                        this.isPolling = false;
-                        clearInterval(pollInterval);
-                        clearInterval(fastStatusChecker);
-                        reject(new Error('Timeout d\'authentification'));
-                        return;
-                    }
-                    
-                    // Show reminder every 10 attempts (approximately every 50 seconds)
-                    if (attempts % 10 === 0) {
-                        console.log('\n💡 RAPPEL: Authentification en attente');
-                        console.log('   🌐 Ouvrez: https://github.com/login/device');
-                        console.log(`   🔑 Code: ${userCode}`);
-                        console.log('   ⏳ En attente de votre autorisation...\n');
-                    }
-                    
-                    // Always check status first - this is more reliable for detecting success
-                    try {
-                        const statusResponse = await this.sendRequest('checkStatus', {
-                            dummy: 'value'
-                        });
-                        
-                        if (statusResponse && statusResponse.result) {
-                            const status = statusResponse.result.status;
-                            if (status === 'OK' || status === 'Authorized' || status === 'SignedIn' || status === 'AlreadySignedIn') {
-                                console.log('\n✅ AUTHENTIFICATION DÉTECTÉE VIA STATUS CHECK! 🎉');
-                                console.log('🔐 GitHub Copilot est maintenant connecté');
-                                this.isPolling = false;
-                                clearInterval(pollInterval);
-                                clearInterval(fastStatusChecker);
-                                this.authenticationFailed = false;
-                                
-                                // Send authentication refresh notifications
-                                console.log('🔧 Actualisation de l\'état d\'authentification du serveur...');
-                                await this.refreshServerAuthentication();
-                                
-                                resolve(statusResponse.result);
-                                return;
-                            }
-                        }
-                    } catch (statusError) {
-                        // Status check failed, continue with signInConfirm
-                    }
-                    
-                    // Try to confirm the sign-in
-                    const confirmResponse = await this.sendRequest('signInConfirm', {
-                        userCode: userCode
-                    });
-                    
-                    if (confirmResponse && !confirmResponse.error) {
-                        // Reset consecutive errors counter on successful response
-                        consecutiveErrors = 0;
-                        lastSuccessfulCheck = Date.now();
-                        
-                        // Check the result status
-                        if (confirmResponse.result && confirmResponse.result.status) {
-                            const status = confirmResponse.result.status;
-                            
-                            if (status === 'OK' || status === 'Authorized' || status === 'SignedIn') {
-                                console.log('\n✅ AUTHENTIFICATION RÉUSSIE VIA SIGNIN CONFIRM! 🎉');
-                                console.log('🔐 GitHub Copilot est maintenant connecté');
-                                this.isPolling = false;
-                                clearInterval(pollInterval);
-                                clearInterval(fastStatusChecker);
-                                this.authenticationFailed = false;
-                                
-                                // Send authentication refresh notifications to the LSP server
-                                console.log('🔧 Actualisation de l\'état d\'authentification du serveur...');
-                                const refreshSuccess = await this.refreshServerAuthentication();
-                                
-                                if (!refreshSuccess) {
-                                    console.log('⚠️  Le serveur LSP ne reconnaît pas encore l\'authentification');
-                                    console.log('🔧 Ceci est normal - les tokens peuvent prendre du temps à se synchroniser');
-                                }
-                                
-                                resolve(confirmResponse.result);
-                                return;
-                            } else if (status === 'NotAuthorized' || status === 'PromptUserDeviceFlow') {
-                                // Only show this message occasionally to avoid spam
-                                if (attempts % 5 === 0) {
-                                    console.log('⏳ En attente de votre autorisation sur GitHub...');
-                                    console.log('   💡 N\'oubliez pas de visiter le lien et d\'entrer le code!');
-                                }
-                                // Continue polling - this is expected during authentication
-                            } else if (status === 'AlreadySignedIn') {
-                                console.log('\n✅ DÉJÀ AUTHENTIFIÉ DÉTECTÉ! 🎉');
-                                console.log('🔐 GitHub Copilot est maintenant connecté');
-                                this.isPolling = false;
-                                clearInterval(pollInterval);
-                                clearInterval(fastStatusChecker);
-                                this.authenticationFailed = false;
-                                
-                                // Send authentication refresh notifications
-                                console.log('🔧 Actualisation de l\'état d\'authentification du serveur...');
-                                const refreshSuccess = await this.refreshServerAuthentication();
-                                
-                                if (!refreshSuccess) {
-                                    console.log('⚠️  Le serveur LSP ne reconnaît pas encore l\'authentification');
-                                    console.log('🔧 Ceci est normal - les tokens peuvent prendre du temps à se synchroniser');
-                                }
-                                
-                                resolve(confirmResponse.result);
-                                return;
-                            } else {
-                                if (attempts % 5 === 0) {
-                                    console.log(`ℹ️  Status reçu: ${status} - continuation du polling...`);
-                                }
-                            }
-                        } else {
-                            // No status in result, might be success - be more aggressive in checking
-                            console.log('ℹ️  Réponse sans status spécifique - vérification supplémentaire...');
-                            
-                            // Double-check with status request
-                            try {
-                                const doubleCheckResponse = await this.sendRequest('checkStatus', {
-                                    dummy: 'value'
-                                });
-                                
-                                if (doubleCheckResponse && doubleCheckResponse.result) {
-                                    const doubleCheckStatus = doubleCheckResponse.result.status;
-                                    if (doubleCheckStatus === 'OK' || doubleCheckStatus === 'Authorized' || 
-                                        doubleCheckStatus === 'SignedIn' || doubleCheckStatus === 'AlreadySignedIn') {
-                                        console.log('\n✅ AUTHENTIFICATION CONFIRMÉE PAR DOUBLE VÉRIFICATION! 🎉');
-                                        console.log('🔐 GitHub Copilot est maintenant connecté');
-                                        this.isPolling = false;
-                                        clearInterval(pollInterval);
-                                        clearInterval(fastStatusChecker);
-                                        this.authenticationFailed = false;
-                                        
-                                        await this.refreshServerAuthentication();
-                                        resolve(doubleCheckResponse.result);
-                                        return;
-                                    }
-                                }
-                            } catch (doubleCheckError) {
-                                // Continue with normal flow
-                            }
-                            
-                            // If no clear success but no error, assume success
-                            console.log('✅ Authentification semble réussie (pas de status spécifique)');
-                            this.isPolling = false;
-                            clearInterval(pollInterval);
-                            clearInterval(fastStatusChecker);
-                            this.authenticationFailed = false;
-                            
-                            // Send authentication refresh notifications
-                            console.log('🔧 Actualisation de l\'état d\'authentification du serveur...');
-                            await this.refreshServerAuthentication();
-                            
-                            resolve(confirmResponse.result);
-                            return;
-                        }
-                    }
-                    
-                    // Check the response for specific error states
-                    if (confirmResponse && confirmResponse.error) {
-                        const errorCode = confirmResponse.error.code;
-                        const errorMessage = confirmResponse.error.message;
-                        
-                        console.log(`🔧 Debug - Error message: "${errorMessage}"`); // Debug log
-                        
-                        if (errorMessage.includes('authorization_pending')) {
-                            // Reset consecutive errors counter for expected pending state
-                            consecutiveErrors = 0;
-                            lastSuccessfulCheck = Date.now();
-                            if (attempts % 5 === 0) {
-                                console.log('⏳ En attente de votre autorisation sur GitHub...');
-                            }
-                            // Continue polling - this is the normal state while waiting
-                        } else if (errorMessage.includes('slow_down')) {
-                            consecutiveErrors = 0;
-                            lastSuccessfulCheck = Date.now();
-                            console.log('🐌 Ralentissement demandé, augmentation de l\'intervalle...');
-                            interval = Math.min(interval * 2, 30); // Max 30 seconds
-                        } else if (errorMessage.includes('expired_token') || 
-                                   errorMessage.includes('device code has expired')) {
-                            console.log('\n❌ Code d\'authentification officiellement expiré');
-                            this.isPolling = false;
-                            clearInterval(pollInterval);
-                            clearInterval(fastStatusChecker);
-                            
-                            // Only restart if the code has actually expired according to GitHub
-                            try {
-                                console.log('🔄 Code expiré confirmé par GitHub - redémarrage...');
-                                const restartResult = await this.restartAuthentication();
-                                resolve(restartResult);
-                            } catch (restartError) {
-                                reject(new Error('Code d\'authentification expiré et impossible de redémarrer: ' + restartError.message));
-                            }
-                            return;
-                        } else if (errorMessage.includes('access_denied')) {
-                            console.log('❌ Accès refusé par l\'utilisateur');
-                            this.isPolling = false;
-                            clearInterval(pollInterval);
-                            clearInterval(fastStatusChecker);
-                            reject(new Error('Authentification refusée'));
-                            return;
-                        } else if (errorMessage.includes('No pending sign in') || 
-                                   errorMessage.includes('no pending sign in')) {
-                            
-                            // "No pending sign in" means the user has completed authentication!
-                            // The device flow session is complete - this is SUCCESS, not an error
-                            console.log('✅ "No pending sign in" - L\'authentification est terminée côté GitHub!');
-                            console.log('🔐 L\'utilisateur a autorisé l\'accès - transition vers l\'état authentifié...');
-                            
-                            this.isPolling = false;
-                            clearInterval(pollInterval);
-                            clearInterval(fastStatusChecker);
-                            this.authenticationFailed = false;
-                            
-                            // The device flow is complete, now we need to properly notify the LSP server
-                            console.log('🔧 Finalisation de l\'authentification avec le serveur LSP...');
-                            
-                            try {
-                                // Method 1: Send final signInConfirm to close the loop
-                                console.log('🔧 Envoi de signInConfirm final...');
-                                const finalConfirm = await this.sendRequest('signInConfirm', {
-                                    userCode: userCode
-                                });
-                                
-                                if (finalConfirm && finalConfirm.result) {
-                                    console.log('✅ Confirmation finale réussie:', finalConfirm.result);
-                                }
-                            } catch (finalConfirmError) {
-                                console.log('ℹ️  Confirmation finale échouée (normal):', finalConfirmError.message);
-                            }
-                            
-                            // Method 2: Force authentication state refresh in the LSP server
-                            console.log('🔧 Actualisation de l\'état d\'authentification...');
-                            await this.refreshServerAuthentication();
-                            
-                            // Method 3: Send a final status notification
-                            try {
-                                console.log('🔧 Envoi de notification de succès...');
-                                await this.sendRequest('setEditorInfo', {
-                                    editorInfo: {
-                                        name: "copilot-client",
-                                        version: "1.0.0"
-                                    },
-                                    editorPluginInfo: {
-                                        name: "copilot-node-client",
-                                        version: "1.0.0"
-                                    }
-                                });
-                                console.log('✅ Notification setEditorInfo envoyée');
-                            } catch (setEditorFinalError) {
-                                console.log('ℹ️  setEditorInfo final échoué:', setEditorFinalError.message);
-                            }
-                            
-                            // Method 4: Check final status to confirm authentication
-                            let finalAuthStatus = 'Completed';
-                            try {
-                                console.log('🔧 Vérification finale du statut...');
-                                const finalStatusCheck = await this.sendRequest('checkStatus', {
-                                    dummy: 'value'
-                                });
-                                
-                                if (finalStatusCheck && finalStatusCheck.result) {
-                                    console.log('🔧 Statut final:', finalStatusCheck.result);
-                                    finalAuthStatus = finalStatusCheck.result.status || 'Completed';
-                                    
-                                    if (finalAuthStatus === 'OK' || finalAuthStatus === 'Authorized' || 
-                                        finalAuthStatus === 'SignedIn' || finalAuthStatus === 'AlreadySignedIn') {
-                                        console.log('✅ Le serveur LSP confirme maintenant l\'authentification!');
-                                    } else {
-                                        console.log('ℹ️  Le serveur LSP rattrape encore l\'état d\'authentification...');
-                                        console.log('ℹ️  L\'authentification utilisateur est terminée avec succès');
-                                    }
-                                }
-                            } catch (finalStatusError) {
-                                console.log('ℹ️  Vérification finale du statut échouée:', finalStatusError.message);
-                            }
-                            
-                            // Success! The authentication flow is complete
-                            console.log('\n🎉 AUTHENTIFICATION TERMINÉE AVEC SUCCÈS! 🎉');
-                            console.log('✅ L\'utilisateur a autorisé GitHub Copilot sur la page web');
-                            console.log('✅ La session d\'authentification device flow est fermée (normal)');
-                            console.log('✅ Le serveur LSP va maintenant utiliser l\'authentification');
-                            console.log('🔐 GitHub Copilot est prêt à utiliser!\n');
-                            
-                            // Resolve with success result
-                            resolve({
-                                status: 'AuthenticationCompleted',
-                                userCode: userCode,
-                                completedAt: new Date().toISOString(),
-                                finalLspStatus: finalAuthStatus
-                            });
-                            return;
-                        } else {
-                            // Other unknown errors - log but don't restart
-                            consecutiveErrors++;
-                            if (attempts % 5 === 0) {
-                                console.log('⚠️  Erreur inconnue:', errorMessage);
-                                console.log('ℹ️  Continuation du polling...');
-                            }
-                        }
-                    }
-                    
-                } catch (error) {
-                    consecutiveErrors++;
-                    
-                    // Handle timeout errors gracefully during polling
-                    if (error.message.includes('Timeout')) {
-                        if (attempts % 10 === 0) {
-                            console.log('⏳ Timeout de requête (normal pendant le polling)...');
-                        }
-                    } else {
-                        console.log('⚠️  Erreur lors du polling:', error.message);
-                        
-                        // Only consider restart after many errors and sufficient time for genuine connection issues
-                        const timeSinceLastSuccessfulCheck = Date.now() - lastSuccessfulCheck;
-                        if (consecutiveErrors >= 15 && timeSinceLastSuccessfulCheck > 300000) { // 5 minutes
-                            console.log('\n❌ Erreurs de connexion persistantes détectées');
-                            console.log('🔧 Ceci semble être un problème de connectivité, pas d\'authentification');
-                            this.isPolling = false;
-                            clearInterval(pollInterval);
-                            clearInterval(fastStatusChecker);
-                            
-                            reject(new Error('Problème de connectivité persistant avec le serveur LSP'));
-                            return;
-                        }
-                    }
-                }
-            };
-            
-            // Start polling immediately, then at intervals
-            poll();
-            const pollInterval = setInterval(poll, interval * 1000);
-            
-            // Also set up a faster status checker every 2 seconds to be more responsive
-            const fastStatusChecker = setInterval(async () => {
-                if (!this.isPolling) {
-                    clearInterval(fastStatusChecker);
-                    return;
-                }
-                
-                try {
-                    const quickStatusResponse = await this.sendRequest('checkStatus', {
-                        dummy: 'value'
-                    });
-                    
-                    if (quickStatusResponse && quickStatusResponse.result) {
-                        const quickStatus = quickStatusResponse.result.status;
-                        if (quickStatus === 'OK' || quickStatus === 'Authorized' || 
-                            quickStatus === 'SignedIn' || quickStatus === 'AlreadySignedIn') {
-                            console.log('\n✅ AUTHENTIFICATION DÉTECTÉE PAR VÉRIFICATION RAPIDE! 🎉');
-                            console.log('🔐 GitHub Copilot est maintenant connecté');
-                            this.isPolling = false;
-                            clearInterval(pollInterval);
-                            clearInterval(fastStatusChecker);
-                            this.authenticationFailed = false;
-                            
-                            await this.refreshServerAuthentication();
-                            resolve(quickStatusResponse.result);
-                            return;
-                        }
-                    }
-                } catch (quickStatusError) {
-                    // Ignore errors in fast checker
-                }
-            }, 2000); // Check every 2 seconds
-            
-            // Set overall timeout
-            setTimeout(() => {
-                this.isPolling = false;
-                clearInterval(pollInterval);
-                clearInterval(fastStatusChecker);
-                if (attempts <= maxAttempts) {
-                    console.log('❌ Timeout global d\'authentification');
-                    reject(new Error('Timeout global d\'authentification'));
-                }
-            }, expiresIn * 1000);
-        });
-    }
-
-    async refreshServerAuthentication() {
-        console.log('🔧 Actualisation de l\'authentification du serveur LSP...');
-        
-        try {
-            // Wait a moment for the authentication to settle
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // Method 1: Try to get the actual authentication token from the completed device flow
-            console.log('🔧 Tentative de récupération du token d\'authentification...');
-            try {
-                // First, try to get a fresh token from the LSP server itself
-                const getTokenResponse = await this.sendRequest('getToken', {
-                    dummy: 'value'
-                });
-                
-                if (getTokenResponse && getTokenResponse.result && getTokenResponse.result.token) {
-                    console.log('✅ Token récupéré du serveur LSP');
-                    console.log(`🔧 Token longueur: ${getTokenResponse.result.token.length}`);
-                    
-                    // Store and use this token
-                    this.copilotToken = getTokenResponse.result.token;
-                    
-                    // Update environment variables
-                    process.env.COPILOT_TOKEN = this.copilotToken;
-                    process.env.GITHUB_COPILOT_TOKEN = this.copilotToken;
-                    
-                } else {
-                    console.log('ℹ️  Pas de token disponible via getToken');
-                }
-            } catch (getTokenError) {
-                console.log('ℹ️  getToken non supporté:', getTokenError.message);
-            }
-            
-            // Method 2: Try to explicitly authenticate using signInConfirm one more time
-            if (this.lastUserCode) {
-                console.log('🔧 Tentative de récupération finale du token via signInConfirm...');
-                try {
-                    const finalTokenConfirm = await this.sendRequest('signInConfirm', {
-                        userCode: this.lastUserCode
-                    });
-                    
-                    if (finalTokenConfirm && finalTokenConfirm.result) {
-                        console.log('✅ Réponse finale de signInConfirm:', finalTokenConfirm.result);
-                        
-                        // Look for token in the response
-                        if (finalTokenConfirm.result.token) {
-                            console.log('✅ Token trouvé dans signInConfirm final!');
-                            this.copilotToken = finalTokenConfirm.result.token;
-                            process.env.COPILOT_TOKEN = this.copilotToken;
-                            process.env.GITHUB_COPILOT_TOKEN = this.copilotToken;
-                        }
-                    }
-                } catch (finalTokenError) {
-                    console.log('ℹ️  signInConfirm final pour token échoué:', finalTokenError.message);
-                }
-            }
-            
-            // Method 3: Send configuration update to trigger authentication refresh
-            console.log('🔧 Envoi de mise à jour de configuration avec token...');
-            const configUpdate = {
-                "github.copilot": {
-                    "enable": {
-                        "*": true
-                    },
-                    "inlineSuggest": {
-                        "enable": true
-                    }
-                }
-            };
-            
-            // Add token to config if we have one
-            if (this.copilotToken) {
-                configUpdate["github.copilot"].token = this.copilotToken;
-            }
-            
-            this.sendNotification('workspace/didChangeConfiguration', {
-                settings: configUpdate
-            });
-            
-            // Method 4: Send editor info to refresh connection with potential token
-            try {
-                console.log('🔧 Actualisation des informations d\'éditeur avec authentification...');
-                const editorInfoParams = {
-                    editorInfo: {
-                        name: "copilot-client",
-                        version: "1.0.0"
-                    },
-                    editorPluginInfo: {
-                        name: "copilot-node-client",
-                        version: "1.0.0"
-                    }
-                };
-                
-                // Add token if available
-                if (this.copilotToken) {
-                    editorInfoParams.authToken = this.copilotToken;
-                }
-                
-                await this.sendRequest('setEditorInfo', editorInfoParams);
-                console.log('✅ Informations d\'éditeur mises à jour avec auth');
-            } catch (setEditorRefreshError) {
-                console.log('ℹ️  Mise à jour des informations d\'éditeur avec auth échouée:', setEditorRefreshError.message);
-            }
-            
-            // Method 5: Try specific Copilot authentication methods
-            try {
-                console.log('🔧 Tentative de méthodes d\'authentification spécifiques...');
-                
-                // Try notifyAuthenticated
-                await this.sendRequest('notifyAuthenticated', {
-                    token: this.copilotToken || 'authenticated'
-                });
-                console.log('✅ notifyAuthenticated envoyé');
-            } catch (notifyAuthError) {
-                console.log('ℹ️  notifyAuthenticated non supporté:', notifyAuthError.message);
-            }
-            
-            // Method 6: Wait for the server to process the authentication state
-            console.log('🔧 Attente de la propagation de l\'authentification...');
-            await new Promise(resolve => setTimeout(resolve, 5000));
-            
-            // Method 7: Check if authentication is now recognized
-            try {
-                const statusResponse = await this.sendRequest('checkStatus', {
-                    dummy: 'value'
-                });
-                
-                if (statusResponse && statusResponse.result) {
-                    console.log('🔧 Status après actualisation complète:', statusResponse.result);
-                    
-                    // If status shows we're authenticated, great!
-                    if (statusResponse.result.status === 'OK' || 
-                        statusResponse.result.status === 'Authorized' ||
-                        statusResponse.result.status === 'SignedIn' ||
-                        statusResponse.result.status === 'AlreadySignedIn') {
-                        console.log('✅ Le serveur confirme l\'authentification après actualisation complète');
-                        return true;
-                    } else {
-                        console.log('⚠️  Le serveur ne reconnaît toujours pas l\'authentification');
-                        console.log('🔧 Status détaillé:', JSON.stringify(statusResponse.result, null, 2));
-                        
-                        // Method 8: Force restart the LSP authentication entirely
-                        console.log('🔧 Tentative de redémarrage complet de l\'authentification LSP...');
-                        try {
-                            // Force signout and signin
-                            await this.sendRequest('signOut', { dummy: 'value' });
-                            await new Promise(resolve => setTimeout(resolve, 2000));
-                            
-                            // Try to restart with our token
-                            const restartAuth = await this.sendRequest('signInInitiate', { dummy: 'value' });
-                            console.log('✅ Redémarrage d\'authentification tenté');
-                            
-                        } catch (restartAuthError) {
-                            console.log('ℹ️  Redémarrage d\'authentification LSP échoué:', restartAuthError.message);
-                        }
-                        
-                        return false;
-                    }
-                }
-            } catch (statusError) {
-                console.log('ℹ️  Vérification du statut après actualisation complète échouée:', statusError.message);
-                return false;
-            }
-            
-            console.log('✅ Actualisation complète de l\'authentification terminée');
-            return true;
-            
-        } catch (error) {
-            console.warn('⚠️  Erreur lors de l\'actualisation complète de l\'authentification:', error.message);
-            console.log('ℹ️  L\'authentification utilisateur est valide, mais le serveur LSP a des difficultés');
-            console.log('💡 Suggestion: Redémarrez le script pour réinitialiser la connexion LSP');
-            return false;
-        }
     }
 
     sendRequest(method, params) {
@@ -1222,23 +364,13 @@ class CopilotClient {
                 params: params
             };
 
-            // Only log detailed info for non-polling requests to reduce noise
-            if (method !== 'signInConfirm' || !this.isPolling) {
-                console.log(`🔧 Envoi de la requête ${method} avec ID ${id}`);
-                console.log('🔧 Message JSON:', JSON.stringify(message, null, 2));
-            }
-
+            this.log(`🔧 Envoi de la requête ${method} avec ID ${id}`);
             this.pendingRequests.set(id, { resolve, reject, method });
             this.sendMessage(message);
 
-            // Timeout plus long pour les requêtes de completion et d'authentification
-            let timeout = 30000; // Default 30s
+            let timeout = 30000;
             if (method === 'textDocument/inlineCompletion') {
-                timeout = 60000; // 60s for completions
-            } else if (method === 'signInConfirm') {
-                timeout = 10000; // 10s for auth polling
-            } else if (method === 'signInInitiate') {
-                timeout = 60000; // 60s for initial auth
+                timeout = 60000;
             }
             
             setTimeout(() => {
@@ -1256,7 +388,7 @@ class CopilotClient {
             method: method,
             params: params
         };
-        console.log(`🔧 Envoi de la notification ${method}`);
+        this.log(`🔧 Envoi de la notification ${method}`);
         this.sendMessage(message);
     }
 
@@ -1265,20 +397,10 @@ class CopilotClient {
         const header = `Content-Length: ${Buffer.byteLength(content, 'utf8')}\r\n\r\n`;
         const fullMessage = header + content;
         
-        // Only log detailed message info for non-polling requests to reduce noise
-        if (message.method !== 'signInConfirm' || !this.isPolling) {
-            console.log('🔧 Message LSP complet à envoyer:');
-            console.log('Header:', JSON.stringify(header));
-            console.log('Content:', content);
-            console.log('Full message length:', fullMessage.length);
-        }
-        
         if (this.process && this.process.stdin && !this.process.stdin.destroyed) {
             try {
                 this.process.stdin.write(fullMessage, 'utf8');
-                if (message.method !== 'signInConfirm' || !this.isPolling) {
-                    console.log('✅ Message envoyé avec succès');
-                }
+                this.log('✅ Message envoyé avec succès');
             } catch (error) {
                 console.error('❌ Erreur lors de l\'envoi du message:', error);
             }
@@ -1288,57 +410,45 @@ class CopilotClient {
     }
 
     handleMessage(message) {
-        // Only log detailed message info for non-status messages to reduce noise
-        if (!message.method || 
-            (message.method !== 'statusNotification' && 
-             message.method !== 'didChangeStatus' && 
-             message.method !== 'window/logMessage')) {
-            
-            // Don't log responses to signInConfirm during polling to reduce noise
-            if (!(message.id && this.isPolling && 
-                  this.pendingRequests.has(message.id) && 
-                  this.pendingRequests.get(message.id).method === 'signInConfirm')) {
-                console.log('🔧 Message reçu du serveur LSP:', JSON.stringify(message, null, 2));
-            }
-        }
+        this.log(`🔧 Message reçu du serveur LSP: ${JSON.stringify(message, null, 2)}`);
         
         if (message.id !== undefined && this.pendingRequests.has(message.id)) {
             const { resolve, method } = this.pendingRequests.get(message.id);
             this.pendingRequests.delete(message.id);
             
             if (message.error) {
-                if (method !== 'signInConfirm' || !this.isPolling) {
-                    console.error(`❌ Erreur LSP pour ${method}:`, message.error);
+                console.error(`❌ Erreur LSP pour ${method}:`, message.error);
+                
+                if (message.error.code === 1000 || 
+                    message.error.message.includes('Not authenticated') ||
+                    message.error.message.includes('not signed into GitHub') ||
+                    message.error.message.includes('authentication') ||
+                    message.error.message.includes('User not authorized')) {
+                    console.error('❌ Erreur d\'authentification détectée!');
+                    console.log('💡 Exécutez: node copilot-auth.js pour vous authentifier');
                 }
             } else {
-                if (method !== 'signInConfirm' || !this.isPolling) {
-                    console.log(`✅ Réponse LSP réussie pour ${method}`);
-                }
+                this.log(`✅ Réponse LSP réussie pour ${method}`);
             }
             
             resolve(message);
         } else if (message.method) {
-            // Gérer les notifications et requêtes du serveur
             this.handleServerRequest(message);
         } else {
-            // Don't show "non géré" messages during polling to reduce noise
-            if (!this.isPolling) {
-                console.log('🔧 Message LSP non géré:', message);
-            }
+            this.log(`🔧 Message LSP non géré: ${JSON.stringify(message)}`);
         }
     }
 
     handleServerRequest(message) {
         switch (message.method) {
             case 'workspace/configuration':
-                // Répondre à la demande de configuration
                 this.sendConfigurationResponse(message);
                 break;
             case 'window/logMessage':
-                console.log(`[LSP Log] ${message.params.message}`);
+                this.log(`[LSP Log] ${message.params.message}`);
                 break;
             case 'window/showMessage':
-                console.log(`[LSP Message] ${message.params.message}`);
+                this.log(`[LSP Message] ${message.params.message}`);
                 break;
             case 'statusNotification':
                 this.handleStatusNotification(message.params);
@@ -1349,63 +459,67 @@ class CopilotClient {
             case 'window/showMessageRequest':
                 this.handleShowMessageRequest(message);
                 break;
+            case 'featureFlagsNotification':
+                this.handleFeatureFlagsNotification(message.params);
+                break;
+            case 'conversation/preconditionsNotification':
+                this.handlePreconditionsNotification(message.params);
+                break;
             default:
-                console.log(`🔧 Notification LSP: ${message.method}`);
+                this.log(`🔧 Notification LSP: ${message.method}`);
                 break;
         }
     }
 
-    sendConfigurationResponse(request) {
-        console.log('🔧 Réponse à workspace/configuration');
-        console.log('🔧 Items demandés:', request.params.items);
+    handleFeatureFlagsNotification(params) {
+        this.log(`🔧 Feature flags reçus: ${JSON.stringify(params, null, 2)}`);
         
-        // Configuration par défaut pour GitHub Copilot avec authentification améliorée
+        // Always show feature analysis (not just in verbose mode)
+        const analysis = this.featureAnalyzer.analyzeFeatureFlags(params);
+        
+        // Show implementation suggestions if verbose
+        if (this.verbose) {
+            const suggestions = this.featureAnalyzer.getImplementationSuggestions();
+            if (suggestions.length > 0) {
+                console.log('\n🛠️  Implementation Suggestions:');
+                suggestions.forEach(suggestion => {
+                    console.log(`   ${suggestion.feature}:`);
+                    console.log(`      Method: ${suggestion.method}`);
+                    console.log(`      Example: ${suggestion.example}`);
+                });
+            }
+        }
+    }
+
+    handlePreconditionsNotification(params) {
+        this.log(`🔧 Preconditions notification: ${JSON.stringify(params, null, 2)}`);
+        this.featureAnalyzer.handlePreconditions(params);
+    }
+
+    sendConfigurationResponse(request) {
+        this.log('🔧 Réponse à workspace/configuration');
+        this.log(`🔧 Items demandés: ${JSON.stringify(request.params.items)}`);
+        
         const config = request.params.items.map(item => {
-            console.log('🔧 Configuration pour section:', item.section);
+            this.log(`🔧 Configuration pour section: ${item.section}`);
             
             switch (item.section) {
+                // ...existing code...
                 case 'github.copilot':
-                    const copilotConfig = {
+                    return {
                         enable: {
                             "*": true
-                        },
-                        advanced: {
-                            debug: {
-                                overrideEngine: "",
-                                testOverrideProxyUrl: "",
-                                overrideProxyUrl: ""
-                            }
                         },
                         inlineSuggest: {
                             enable: true
                         }
                     };
                     
-                    // Add token if we have one from device flow
-                    if (this.copilotToken) {
-                        copilotConfig.authToken = this.copilotToken;
-                        console.log('🔧 Ajout du token d\'authentification à la configuration');
-                    } else if (this.githubToken) {
-                        copilotConfig.authToken = this.githubToken;
-                        console.log('🔧 Ajout du token GitHub CLI à la configuration');
-                    }
-                    
-                    return copilotConfig;
-                    
                 case 'github-enterprise':
                 case 'github':
-                    const githubConfig = {
+                    return {
                         uri: "https://github.com"
                     };
-                    
-                    // Add token if available
-                    if (this.copilotToken) {
-                        githubConfig.token = this.copilotToken;
-                    } else if (this.githubToken) {
-                        githubConfig.token = this.githubToken;
-                    }
-                    
-                    return githubConfig;
                     
                 case 'http':
                     return {
@@ -1423,12 +537,12 @@ class CopilotClient {
                         insertSpaces: true
                     };
                 default:
-                    console.log('🔧 Section non reconnue:', item.section);
+                    this.log(`🔧 Section non reconnue: ${item.section}`);
                     return {};
             }
         });
 
-        console.log('🔧 Configuration finale à envoyer:', JSON.stringify(config, null, 2));
+        this.log(`🔧 Configuration finale à envoyer: ${JSON.stringify(config, null, 2)}`);
 
         const response = {
             jsonrpc: '2.0',
@@ -1443,108 +557,33 @@ class CopilotClient {
         const status = params.status || params.kind;
         const message = params.message;
         
-        // Only show important status changes, and reduce noise during polling
-        if (!this.isPolling || status === 'Normal' || status === 'OK') {
-            if (status === 'Error') {
-                console.log(`❌ Status: ${status} - ${message}`);
-            } else if (status === 'Normal' || status === 'OK') {
-                console.log(`✅ Status: ${status} - ${message}`);
-            } else {
-                console.log(`ℹ️  Status: ${status} - ${message}`);
-            }
-        }
-        
-        if ((params.status === 'Error' || params.kind === 'Error') && 
-            (params.message.includes('not signed into GitHub') || 
-             params.message.includes('Invalid copilot token') ||
-             params.message.includes('missing token') ||
-             params.message.includes('User not authorized'))) {
+        if (status === 'Error') {
+            console.log(`❌ Status: ${status} - ${message}`);
             
-            // Don't show error details during initial auth flow or immediately after successful auth
-            if (!this.isPolling && !this.recentlyAuthenticated) {
-                console.log('🔧 Détails de l\'erreur:', params.message);
-                console.log('ℹ️  Ceci peut être normal - l\'authentification est peut-être en cours...');
-            } else if (this.recentlyAuthenticated) {
-                console.log('ℹ️  Erreur d\'authentification après connexion - attente de propagation...');
+            if (message.includes('not signed into GitHub') || 
+                message.includes('Invalid copilot token') ||
+                message.includes('missing token') ||
+                message.includes('User not authorized')) {
+                console.log('💡 Erreur d\'authentification détectée');
+                console.log('💡 Exécutez: node copilot-auth.js pour vous authentifier');
             }
-            
-            // Set a flag to indicate authentication is needed (but be more lenient after recent auth)
-            if (!this.recentlyAuthenticated) {
-                this.authenticationFailed = true;
-            }
-        } else if (status === 'Normal' || message.includes('signed in') || message.includes('Signed in')) {
-            // Clear authentication failure flag on success
-            this.authenticationFailed = false;
-            this.recentlyAuthenticated = true;
-            
-            // Clear the recently authenticated flag after a delay
-            setTimeout(() => {
-                this.recentlyAuthenticated = false;
-            }, 30000); // 30 seconds grace period
-            
-            if (!this.isPolling) {
-                console.log('✅ Authentification Copilot réussie!');
-            }
-            
-            // If we were polling, stop it
-            if (this.isPolling) {
-                console.log('\n✅ AUTHENTIFICATION DÉTECTÉE VIA STATUS! 🎉');
-                console.log('🔐 GitHub Copilot est maintenant connecté');
-                this.isPolling = false;
-            }
+        } else if (status === 'Normal' || status === 'OK') {
+            this.log(`✅ Status: ${status} - ${message}`);
+        } else {
+            this.log(`ℹ️  Status: ${status} - ${message}`);
         }
     }
 
     handleShowMessageRequest(request) {
-        console.log('🔧 Message request du serveur:', request.params.message);
+        this.log(`🔧 Message request du serveur: ${request.params.message}`);
         
-        // Respond to the message request
         const response = {
             jsonrpc: '2.0',
             id: request.id,
-            result: null // or the selected action
+            result: null
         };
         
         this.sendMessage(response);
-    }
-
-    async initiateCopilotAuth() {
-        console.log('🔑 Démarrage de l\'authentification GitHub Copilot...');
-        
-        try {
-            // First try to refresh the token
-            console.log('🔧 Tentative de rafraîchissement du token GitHub...');
-            await exec('gh auth refresh');
-            
-            // Get the refreshed token
-            const { stdout: newToken } = await exec('gh auth token');
-            if (newToken.trim()) {
-                process.env.GITHUB_TOKEN = newToken.trim();
-                process.env.GITHUB_ACCESS_TOKEN = newToken.trim();
-                process.env.COPILOT_TOKEN = newToken.trim();
-                console.log('✅ Token rafraîchi et mis à jour');
-                
-                // Send updated configuration to the server
-                this.sendNotification('workspace/didChangeConfiguration', {
-                    settings: {
-                        "github-enterprise": {
-                            uri: "https://github.com",
-                            token: process.env.GITHUB_TOKEN
-                        }
-                    }
-                });
-                
-                return;
-            }
-        } catch (error) {
-            console.log('❌ Échec du rafraîchissement automatique:', error.message);
-        }
-        
-        console.log('🔧 Action manuelle requise:');
-        console.log('1. Exécutez: gh auth logout');
-        console.log('2. Puis: gh auth login --scopes "copilot"');
-        console.log('3. Redémarrez ce script');
-        console.log('4. Ou si vous utilisez Copilot Business, contactez votre administrateur');
     }
 
     async openDocument(filePath) {
@@ -1557,9 +596,11 @@ class CopilotClient {
         const absolutePath = path.resolve(filePath);
         const uri = `file://${absolutePath.replace(/\\/g, '/')}`;
 
-        console.log(`🔧 Ouverture du document: ${filePath}`);
-        console.log(`🔧 URI: ${uri}`);
-        console.log(`🔧 Language ID: ${languageId}`);
+        this.log(`🔧 Ouverture du document: ${filePath}`);
+        this.log(`🔧 URI: ${uri}`);
+        this.log(`🔧 Language ID: ${languageId}`);
+        this.log(`🔧 Taille du contenu: ${content.length} caractères`);
+        this.log(`🔧 Nombre de lignes: ${content.split('\n').length}`);
 
         this.sendNotification('textDocument/didOpen', {
             textDocument: {
@@ -1570,8 +611,15 @@ class CopilotClient {
             }
         });
 
-        // Attendre un peu pour que le serveur traite le document
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        this.sendNotification('workspace/didChangeWatchedFiles', {
+            changes: [{
+                uri: uri,
+                type: 1
+            }]
+        });
+
+        this.log('⏳ Attente du traitement du document...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
 
         return uri;
     }
@@ -1581,144 +629,132 @@ class CopilotClient {
             throw new Error('Serveur LSP non initialisé');
         }
 
-        // Check if we had authentication failures but allow some retry
-        if (this.authenticationFailed && !this.hasTriedAuth) {
-            console.log('⚠️  Authentification requise - tentative d\'authentification automatique...');
-            try {
-                this.hasTriedAuth = true;
-                await this.initiateCopilotSignIn();
-                
-                // Wait a bit for authentication to complete
-                await new Promise(resolve => setTimeout(resolve, 5000));
-                
-                // If still failed, throw error
-                if (this.authenticationFailed) {
-                    throw new Error('Authentification GitHub Copilot requise - veuillez compléter l\'authentification dans votre navigateur');
-                }
-            } catch (authError) {
-                throw new Error(`Authentification échouée: ${authError.message}`);
-            }
-        } else if (this.authenticationFailed) {
-            throw new Error('Authentification GitHub Copilot requise - veuillez redémarrer le script et compléter l\'authentification');
-        }
-
         const uri = await this.openDocument(filePath);
         
-        console.log(`🔍 Recherche de completions pour ${path.basename(filePath)} à la ligne ${line + 1}, caractère ${character}`);
-        console.log(`🔧 URI utilisé: ${uri}`);
+        this.log(`🔍 Recherche de completions pour ${path.basename(filePath)} à la ligne ${line + 1}, caractère ${character}`);
+        this.log(`🔧 URI utilisé: ${uri}`);
 
-        // Wait a bit more for the server to be ready after opening document
+        const content = fs.readFileSync(filePath, 'utf8');
+        const lines = content.split('\n');
+        this.log('🔧 Contexte du fichier:');
+        this.log(`   Ligne ${line + 1}: "${lines[line] || ''}"`);
+        this.log(`   Position du curseur: ${character}`);
+        this.log(`   Caractère à cette position: "${(lines[line] || '')[character] || '<fin de ligne>'}"`);
+
+        this.log('⏳ Attente de traitement du document par le serveur...');
         await new Promise(resolve => setTimeout(resolve, 5000));
 
-        // Check authentication status before proceeding
-        if (this.authenticationFailed) {
-            console.error('❌ Authentification échouée détectée - abandon de la requête');
-            throw new Error('Authentification GitHub Copilot requise');
-        }
-
-        console.log('🔧 Vérification de l\'état d\'authentification...');
+        this.log('🔧 Envoi de la requête de completion...');
         
-        // Set polling flag to reduce noise
-        this.isPolling = false;
-        
-        // Try different completion methods for Copilot
         const completionMethods = [
-            'textDocument/inlineCompletion',  // GitHub Copilot specific
-            'getCompletions',                 // Alternative Copilot method
+            // ...existing code...
+            {
+                name: 'textDocument/inlineCompletion',
+                params: {
+                    textDocument: { uri: uri },
+                    position: { line: line, character: character },
+                    context: {
+                        triggerKind: 1
+                    }
+                }
+            },
+            {
+                name: 'getCompletions',
+                params: {
+                    doc: {
+                        uri: uri,
+                        version: 1,
+                        position: { line: line, character: character }
+                    }
+                }
+            },
+            {
+                name: 'textDocument/completion',
+                params: {
+                    textDocument: { uri: uri },
+                    position: { line: line, character: character },
+                    context: {
+                        triggerKind: 1
+                    }
+                }
+            },
+            {
+                name: 'getCompletionsCycling',
+                params: {
+                    doc: {
+                        uri: uri,
+                        version: 1,
+                        position: { line: line, character: character }
+                    }
+                }
+            }
         ];
 
         let response = null;
         let usedMethod = null;
-        let authError = false;
+        let lastError = null;
 
         for (const method of completionMethods) {
             try {
-                console.log(`🔧 Essai de la méthode: ${method}`);
-                
-                let completionParams;
-                if (method === 'textDocument/inlineCompletion') {
-                    completionParams = {
-                        textDocument: { uri: uri },
-                        position: { line: line, character: character },
-                        context: {
-                            triggerKind: 1 // Invoked
-                        }
-                    };
-                } else if (method === 'getCompletions') {
-                    completionParams = {
-                        doc: {
-                            uri: uri,
-                            version: 1,
-                            position: { line: line, character: character }
-                        }
-                    };
-                } else {
-                    completionParams = {
-                        textDocument: { uri: uri },
-                        position: { line: line, character: character },
-                        context: {
-                            triggerKind: 1 // Invoked
-                        }
-                    };
-                }
+                this.log(`🔧 Essai de la méthode: ${method.name}`);
+                this.log(`🔧 Paramètres: ${JSON.stringify(method.params, null, 2)}`);
 
-                console.log(`🔧 Paramètres pour ${method}:`, JSON.stringify(completionParams, null, 2));
-
-                response = await this.sendRequest(method, completionParams);
+                response = await this.sendRequest(method.name, method.params);
                 
                 if (response && !response.error) {
-                    usedMethod = method;
-                    console.log(`✅ Méthode ${method} réussie`);
+                    usedMethod = method.name;
+                    this.log(`✅ Méthode ${method.name} réussie (requête traitée)`);
                     break;
                 } else if (response && response.error) {
-                    console.log(`❌ Méthode ${method} échouée:`, response.error.message);
+                    this.log(`❌ Méthode ${method.name} échouée: ${response.error.message}`);
+                    lastError = response.error;
                     
-                    // Check for authentication errors specifically
                     if (response.error.code === 1000 || 
                         response.error.message.includes('Not authenticated') ||
                         response.error.message.includes('not signed into GitHub') ||
                         response.error.message.includes('authentication') ||
                         response.error.message.includes('User not authorized')) {
-                        console.error('❌ Erreur d\'authentification GitHub Copilot détectée dans la réponse!');
-                        authError = true;
-                        this.authenticationFailed = true;
+                        console.error('❌ Erreur d\'authentification GitHub Copilot détectée!');
+                        console.log('💡 Exécutez: node copilot-auth.js pour vous authentifier');
+                        throw new Error('Authentification GitHub Copilot requise - exécutez: node copilot-auth.js');
                     }
+                    continue;
                 }
             } catch (error) {
-                console.log(`❌ Erreur avec la méthode ${method}:`, error.message);
+                this.log(`❌ Erreur avec la méthode ${method.name}: ${error.message}`);
+                lastError = error;
+                
+                if (error.message.includes('Authentification GitHub Copilot requise')) {
+                    throw error;
+                }
                 continue;
             }
         }
 
-        if (authError || this.authenticationFailed) {
-            console.error('❌ Problème d\'authentification détecté!');
-            console.log('🔧 L\'authentification GitHub Copilot est requise.');
-            console.log('🔧 Redémarrez le script pour relancer le processus d\'authentification.');
-            
-            throw new Error('Authentification GitHub Copilot requise - redémarrez le script');
-        }
-
         if (!response || response.error) {
             console.error('❌ Toutes les méthodes de completion ont échoué');
-            if (response && response.error) {
-                console.error('❌ Dernière erreur:', response.error);
+            if (lastError) {
+                console.error('❌ Dernière erreur:', lastError);
             }
+            
+            this.log('🔧 Vérification des capacités du serveur...');
+            if (this.serverCapabilities) {
+                this.log(`🔧 Capacités disponibles: ${JSON.stringify(this.serverCapabilities, null, 2)}`);
+            }
+            
             return [];
         }
 
-        console.log(`✅ Completion réussie avec la méthode: ${usedMethod}`);
-        console.log('🔧 Réponse brute:', JSON.stringify(response, null, 2));
+        this.log(`🔧 Réponse brute: ${JSON.stringify(response, null, 2)}`);
 
-        // Gérer les différents formats de réponse selon la méthode
         let items = [];
         if (response.result) {
             if (usedMethod === 'textDocument/inlineCompletion') {
-                // Format pour inlineCompletion
                 if (Array.isArray(response.result.items)) {
                     items = response.result.items.map(item => ({
                         label: item.insertText || item.text || '',
                         insertText: item.insertText || item.text || '',
-                        kind: 1, // Text kind
+                        kind: 1,
                         detail: 'GitHub Copilot'
                     }));
                 } else if (response.result.items) {
@@ -1739,7 +775,20 @@ class CopilotClient {
         }
         
         if (items.length === 0) {
-            console.log('ℹ️  Aucune suggestion Copilot disponible');
+            console.log('ℹ️  Aucune suggestion Copilot disponible à cette position');
+            if (this.verbose) {
+                console.log('💡 Raisons possibles:');
+                console.log('   - Le contexte actuel ne nécessite pas de suggestion');
+                console.log('   - Copilot n\'a pas de suggestion pertinente pour ce code');
+                console.log('   - La position du curseur ne permet pas de suggestion');
+                console.log('   - Essayez une position différente ou ajoutez plus de contexte');
+                console.log('   - Le serveur peut ne pas être correctement authentifié');
+                
+                console.log('🔧 Debug supplémentaire:');
+                console.log(`   - Méthode utilisée: ${usedMethod}`);
+                console.log(`   - Type de réponse: ${typeof response.result}`);
+                console.log(`   - Contenu de result: ${JSON.stringify(response.result)}`);
+            }
             return [];
         }
 
@@ -1752,7 +801,7 @@ class CopilotClient {
             
             console.log(`  ${index + 1}. [${kind}] ${preview}${hasMoreLines ? '...' : ''}`);
             
-            if (item.detail) {
+            if (item.detail && this.verbose) {
                 console.log(`      Detail: ${item.detail}`);
             }
         });
@@ -1833,105 +882,70 @@ class CopilotClient {
     }
 
     async stop() {
-        console.log('🛑 Arrêt du serveur LSP...');
+        this.log('🛑 Arrêt du serveur LSP...');
         
-        // Envoyer shutdown request
         if (this.isInitialized) {
             try {
                 await this.sendRequest('shutdown', null);
                 this.sendNotification('exit', null);
             } catch (error) {
-                console.log('Erreur lors de l\'arrêt propre:', error.message);
+                this.log(`Erreur lors de l'arrêt propre: ${error.message}`);
             }
         }
 
         if (this.process && !this.process.killed) {
-            this.process.kill('SIGTERM');
-            
-            // Forcer l'arrêt après 5 secondes
-            setTimeout(() => {
-                if (this.process && !this.process.killed) {
-                    this.process.kill('SIGKILL');
-                }
-            }, 5000);
-        }
-        
-        console.log('✅ Serveur LSP arrêté');
-    }
-
-    async restartAuthentication() {
-        console.log('🔄 Redémarrage du processus d\'authentification GitHub Copilot...');
-        this.isPolling = false;
-        
-        // Wait a moment before restarting
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        
-        try {
-            // Try to get a new device code
-            console.log('🔧 Demande d\'un nouveau code d\'authentification...');
-            const signInResponse = await this.sendRequest('signInInitiate', {
-                dummy: 'value'
-            });
-            
-            if (signInResponse && !signInResponse.error && signInResponse.result) {
-                console.log('\n🔗 NOUVELLE AUTHENTIFICATION GITHUB COPILOT 🔗');
-                console.log('═'.repeat(60));
-                console.log('🚨 IMPORTANT: UTILISEZ LE NOUVEAU CODE CI-DESSOUS 🚨');
-                console.log('');
-                console.log('🌐 Ouvrez cette URL dans votre navigateur:');
-                console.log(`   ${signInResponse.result.verificationUri}`);
-                console.log('');
-                console.log('🔑 Saisissez ce NOUVEAU code sur la page GitHub:');
-                console.log(`   ${signInResponse.result.userCode}`);
-                console.log('');
-                console.log(`⏱️  Code valide pendant: ${Math.floor(signInResponse.result.expiresIn / 60)} minutes`);
-                console.log('');
-                console.log('📋 Étapes à suivre:');
-                console.log('   1. ❗ IGNOREZ l\'ancien code - utilisez le NOUVEAU code ci-dessus');
-                console.log('   2. Ouvrez le lien dans votre navigateur');
-                console.log('   3. Connectez-vous à GitHub si nécessaire');
-                console.log('   4. Saisissez le NOUVEAU code dans le formulaire');
-                console.log('   5. Autorisez l\'accès à GitHub Copilot');
-                console.log('═'.repeat(60));
-                console.log('⏳ Attente de votre authentification avec le nouveau code...');
-                console.log('');
+            try {
+                this.process.kill('SIGTERM');
                 
-                // Start polling with the new code
-                return await this.pollForAuthentication(
-                    signInResponse.result.userCode, 
-                    signInResponse.result.interval || 5, 
-                    signInResponse.result.expiresIn
-                );
-            } else {
-                const errorMsg = signInResponse?.error?.message || 'Réponse invalide';
-                throw new Error(`Impossible d'obtenir un nouveau code d'authentification: ${errorMsg}`);
+                await new Promise((resolve) => {
+                    const timeout = setTimeout(() => {
+                        if (this.process && !this.process.killed) {
+                            try {
+                                this.process.kill('SIGKILL');
+                            } catch (e) {
+                                // Ignore errors on force kill
+                            }
+                        }
+                        resolve();
+                    }, 5000);
+                    
+                    if (this.process) {
+                        this.process.on('exit', () => {
+                            clearTimeout(timeout);
+                            resolve();
+                        });
+                    } else {
+                        clearTimeout(timeout);
+                        resolve();
+                    }
+                });
+            } catch (error) {
+                this.log(`Erreur lors de l'arrêt du processus: ${error.message}`);
             }
-        } catch (error) {
-            console.error('❌ Erreur lors du redémarrage de l\'authentification:', error.message);
-            throw error;
         }
+        
+        this.log('✅ Serveur LSP arrêté');
     }
 }
 
-// Fonction de démonstration
-async function demo() {
-    const client = new CopilotClient();
+async function demo(verbose = false) {
+    const client = new CopilotClient(verbose);
     
     try {
         await client.start();
         
-        // Créer des fichiers de test plus réalistes
         const testFiles = [
             {
                 name: path.join(__dirname, 'test_fibonacci.py'),
                 content: `def fibonacci(n):
     """Calculate fibonacci number recursively"""
-    if (n <= 1:
+    if n <= 1:
         return n
-    # Add recursive implementation here
-    `,
+    else:
+        `,
                 line: 4,
-                char: 4
+                char: 8,
+                description: 'Python Fibonacci function'
             },
             {
                 name: path.join(__dirname, 'test_quicksort.js'),
@@ -1939,11 +953,24 @@ async function demo() {
     if (arr.length <= 1) {
         return arr;
     }
-    const pivot = arr[0];
-    // Implement partitioning logic
-    `,
-                line: 5,
-                char: 4
+    const pivot = arr[Math.floor(arr.length / 2)];
+    const left = [];
+    const right = [];
+    
+    for (let i = 0; i < arr.length; i++) {
+        if (arr[i] < pivot) {
+            left.push(arr[i]);
+        } else if (arr[i] > pivot) {
+            right.push(arr[i]);
+        }
+    }
+    
+    return [...quicksort(left), pivot, ...quicksort(right)];
+}
+`,
+                line: 10,
+                char: 4,
+                description: 'JavaScript Quicksort function'
             },
             {
                 name: path.join(__dirname, 'test_react.jsx'),
@@ -1955,7 +982,8 @@ function TodoApp() {
     // Add function to handle new todo
     `,
                 line: 5,
-                char: 4
+                char: 4,
+                description: 'React TodoApp component'
             }
         ];
 
@@ -1964,7 +992,7 @@ function TodoApp() {
         for (const testFile of testFiles) {
             try {
                 fs.writeFileSync(testFile.name, testFile.content);
-                console.log(`\n📄 Test: ${path.basename(testFile.name)}`);
+                console.log(`\n📄 Test: ${testFile.description}`);
                 console.log('Contenu:');
                 console.log(testFile.content);
                 
@@ -1979,18 +1007,17 @@ function TodoApp() {
                 
                 console.log('----------------------------------------');
             } catch (error) {
-                console.error(`❌ Erreur avec ${testFile.name}:`, error.message);
+                console.error(`❌ Erreur avec ${testFile.name}: ${error.message}`);
             }
         }
         
-        // Nettoyer les fichiers de test
         testFiles.forEach(file => {
             try { 
                 if (fs.existsSync(file.name)) {
                     fs.unlinkSync(file.name); 
                 }
             } catch (e) {
-                console.log(`Impossible de supprimer ${file.name}:`, e.message);
+                console.log(`Impossible de supprimer ${file.name}: ${e.message}`);
             }
         });
         
@@ -2007,14 +1034,14 @@ function TodoApp() {
     }
 }
 
-// Interface CLI améliorée
 async function main() {
     const args = process.argv.slice(2);
     const command = args[0] || 'help';
+    const verbose = args.includes('--verbose');
 
     switch (command) {
         case 'demo':
-            await demo();
+            await demo(verbose);
             break;
             
         case 'complete':
@@ -2024,10 +1051,10 @@ async function main() {
                 process.exit(1);
             }
             
-            const client = new CopilotClient();
+            const client = new CopilotClient(verbose);
             try {
                 await client.start();
-                const line = parseInt(args[2]) - 1; // Convertir en index 0
+                const line = parseInt(args[2]) - 1;
                 const char = parseInt(args[3]);
                 const completions = await client.getCompletions(args[1], line, char);
                 
@@ -2048,7 +1075,7 @@ async function main() {
             break;
 
         case 'check':
-            const checkClient = new CopilotClient();
+            const checkClient = new CopilotClient(verbose);
             try {
                 await checkClient.checkDependencies();
                 console.log('✅ Toutes les dépendances sont disponibles');
@@ -2070,6 +1097,9 @@ async function main() {
             console.log('  check                         - Vérifier les dépendances');
             console.log('  help                          - Afficher cette aide');
             console.log('');
+            console.log('Options:');
+            console.log('  --verbose                     - Activer le mode verbeux');
+            console.log('');
             console.log('Exemples:');
             console.log('  node copilot-client.js demo');
             console.log('  node copilot-client.js complete script.py 25 0');
@@ -2077,12 +1107,18 @@ async function main() {
             console.log('');
             console.log('Prérequis:');
             console.log('  - npm install -g @github/copilot-language-server');
-            console.log('  - gh auth login (authentification GitHub)');
             console.log('  - Abonnement GitHub Copilot actif');
+            console.log('');
+            console.log('💡 WORKFLOW D\'AUTHENTIFICATION:');
+            console.log('   1. Terminal 1: node copilot-auth.js (authentifiez-vous et laissez ouvert)');
+            console.log('   2. Terminal 2: node copilot-client.js demo');
+            console.log('');
+            console.log('❌ Si vous voyez des erreurs d\'authentification:');
+            console.log('   - Vérifiez que copilot-auth.js fonctionne dans un autre terminal');
+            console.log('   - L\'authentification doit être active pendant l\'utilisation du client');
     }
 }
 
-// Gestion propre de l'arrêt
 let client = null;
 
 process.on('SIGINT', async () => {
