@@ -1,0 +1,63 @@
+= Guía de Pruebas
+:toc:
+:lang: es
+
+[.lead]
+link:tests.adoc[English] | link:tests-fr.adoc[Français] | link:tests-de.adoc[Deutsch] | *Español* | link:tests-zh.adoc[中文] | link:tests-hi.adoc[हिन्दी] | link:tests-ru.adoc[Русский] | link:tests-ar.adoc[العربية] | link:tests-ja.adoc[日本語]
+
+== Ejecutar Pruebas
+
+Para ejecutar pruebas en este proyecto, use el siguiente comando en la terminal:
+
+[source,shell]
+----
+npm test
+----
+
+Este comando ejecuta la suite completa de pruebas Jest con cobertura TDD.
+
+=== Comandos alternativos de prueba
+
+[source,shell]
+----
+# Ejecutar pruebas con cobertura
+npm run test:coverage
+
+# Ejecutar pruebas en modo vigilancia
+npm run test:watch
+
+# Ejecutar pruebas CLI integradas
+node pilot-agent-cli.js test
+----
+
+== Arquitectura de Pruebas
+
+Nuestras pruebas siguen la arquitectura hexagonal:
+
+[source]
+----
+tests/
+├── domain/              # Pruebas de lógica de negocio
+│   ├── entities/        # Pruebas de entidades
+│   └── services/        # Pruebas de servicios
+└── infrastructure/      # Pruebas de adaptadores
+    └── adapters/        # Pruebas de adaptadores de infraestructura
+----
+
+== Requisitos
+
+Asegúrese de estar en el directorio raíz del proyecto y que todas las dependencias estén instaladas con `npm install`.
+
+== Principios TDD Aplicados
+
+. **Rojo**: Escribir una prueba que falle
+. **Verde**: Escribir código mínimo para hacerla pasar
+. **Refactor**: Mejorar el código manteniendo las pruebas verdes
+
+== Cobertura de Pruebas
+
+Cobertura actual: **38 pruebas pasando** con umbral mínimo del 80% para:
+- Ramas
+- Funciones
+- Líneas
+- Declaraciones

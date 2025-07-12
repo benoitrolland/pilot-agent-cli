@@ -1,0 +1,56 @@
+= GitHub Copilot Клиент - Информация о Проекте
+:toc:
+:lang: ru
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | *Русский* | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語]
+
+== Обзор Файлов
+
+=== Слой Аутентификации и Клиента
+
+- **copilot-auth.js**:
+  . Запускает copilot-language-server
+  . Управляет диалогом аутентификации
+  . Проверяет и отображает статус аутентификации
+  . Предоставляет интерактивный CLI для аутентификации пользователя
+
+- **copilot-client.js**:
+  Технический адаптер для Copilot Language Server. Обрабатывает аутентификацию, связь с Copilot и проверку зависимостей.
+
+- **pilot-agent-cli.js**:
+  Главный CLI интерфейс, оркестрирующий автоматизацию проекта: управление конфигурацией, выполнение агента, взаимодействие с Git.
+
+=== Сводка Архитектуры
+
+[source]
+----
+copilot-auth.js      → Управление аутентификацией
+copilot-client.js    → Технический адаптер Copilot (инфраструктура)
+pilot-agent-cli.js   → Точка входа CLI, бизнес-оркестрация
+----
+
+== Архитектура Проекта
+
+=== Реализация Гексагональной Архитектуры
+
+[source]
+----
+Домен (Бизнес-Ядро)
+├── entities/           # Бизнес-сущности (ProjectConfig)
+├── ports/             # Интерфейсные контракты (FileSystem, GitRepository)
+└── services/          # Бизнес-оркестрация (CopilotAgentService)
+
+Инфраструктура (Адаптеры)
+├── adapters/          # Конкретные реализации
+├── config/           # Управление конфигурацией
+└── process/          # Управление процессами
+----
+
+=== Применённые Принципы SOLID
+
+- **S**ingle Responsibility: Каждый класс имеет одну ответственность
+- **O**pen/Closed: Расширяемый через интерфейсы (порты)
+- **L**iskov Substitution: Адаптеры соблюдают свои контракты
+- **I**nterface Segregation: Специализированные, целевые интерфейсы
+- **D**ependency Inversion: Домен зависит только от абстракций

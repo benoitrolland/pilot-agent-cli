@@ -1,0 +1,98 @@
+= Guía de Uso
+:toc:
+:lang: es
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | link:usage-de.adoc[Deutsch] | *Español* | link:usage-zh.adoc[中文] | link:usage-hi.adoc[हिन्दी] | link:usage-ru.adoc[Русский] | link:usage-ar.adoc[العربية] | link:usage-ja.adoc[日本語]
+
+== Instalación
+
+[source,shell]
+----
+npm install
+----
+
+== Inicio Rápido
+
+=== 1. Probar la CLI
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. Inicializar configuración
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. Ejecutar pruebas
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. Ver configuración
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. Ejecutar el agente (después de configurar)
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== Uso Avanzado
+
+=== Configuración de Autenticación
+Antes de usar el agente, configure la autenticación de GitHub Copilot:
+
+[source,shell]
+----
+# Terminal 1: Iniciar servidor de autenticación
+node copilot-auth.js
+
+# Terminal 2: Usar el cliente
+node copilot-client.js demo
+----
+
+=== Configuración Personalizada
+[source,shell]
+----
+# Ejecutar con archivo de configuración personalizado
+node pilot-agent-cli.js run --config ./mi-config.json --verbose
+
+# Ver configuración actual
+node pilot-agent-cli.js config
+----
+
+== Comandos Disponibles
+
+=== Comandos CLI
+- `init` - Crear archivo de configuración predeterminado
+- `run` - Ejecutar Pilot Agent con configuración actual
+- `config` - Mostrar configuración actual
+- `test` - Ejecutar pruebas básicas y validaciones
+- `help` - Mostrar mensaje de ayuda
+
+=== Opciones
+- `--config <ruta>` - Especificar ruta del archivo de configuración
+- `--verbose` - Habilitar registro detallado
+
+== Solución de Problemas
+
+=== Dependencias
+Asegúrese de que GitHub Copilot Language Server esté instalado:
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== Autenticación
+Verificar autenticación de GitHub:
+[source,shell]
+----
+gh auth status
+----

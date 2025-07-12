@@ -1,0 +1,98 @@
+= Nutzungsleitfaden
+:toc:
+:lang: de
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | *Deutsch* | link:usage-es.adoc[Español] | link:usage-zh.adoc[中文] | link:usage-hi.adoc[हिन्दी] | link:usage-ru.adoc[Русский] | link:usage-ar.adoc[العربية] | link:usage-ja.adoc[日本語]
+
+== Installation
+
+[source,shell]
+----
+npm install
+----
+
+== Schnellstart
+
+=== 1. CLI testen
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. Konfiguration initialisieren
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. Tests ausführen
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. Konfiguration anzeigen
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. Agent ausführen (nach Konfiguration)
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== Erweiterte Nutzung
+
+=== Authentifizierungs-Setup
+Vor der Nutzung des Agents, GitHub Copilot Authentifizierung einrichten:
+
+[source,shell]
+----
+# Terminal 1: Authentifizierungsserver starten
+node copilot-auth.js
+
+# Terminal 2: Client verwenden
+node copilot-client.js demo
+----
+
+=== Benutzerdefinierte Konfiguration
+[source,shell]
+----
+# Mit benutzerdefinierten Konfigurationsdatei ausführen
+node pilot-agent-cli.js run --config ./meine-config.json --verbose
+
+# Aktuelle Konfiguration anzeigen
+node pilot-agent-cli.js config
+----
+
+== Verfügbare Befehle
+
+=== CLI-Befehle
+- `init` - Standard-Konfigurationsdatei erstellen
+- `run` - Pilot Agent mit aktueller Konfiguration ausführen
+- `config` - Aktuelle Konfiguration anzeigen
+- `test` - Grundlegende Tests und Validierungen ausführen
+- `help` - Hilfenachricht anzeigen
+
+=== Optionen
+- `--config <pfad>` - Konfigurationsdateipfad angeben
+- `--verbose` - Ausführliche Protokollierung aktivieren
+
+== Fehlerbehebung
+
+=== Abhängigkeiten
+GitHub Copilot Language Server installieren:
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== Authentifizierung
+GitHub-Authentifizierung überprüfen:
+[source,shell]
+----
+gh auth status
+----

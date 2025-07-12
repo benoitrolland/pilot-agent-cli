@@ -1,0 +1,63 @@
+= Testleitfaden
+:toc:
+:lang: de
+
+[.lead]
+link:tests.adoc[English] | link:tests-fr.adoc[Français] | *Deutsch* | link:tests-es.adoc[Español] | link:tests-zh.adoc[中文] | link:tests-hi.adoc[हिन्दी] | link:tests-ru.adoc[Русский] | link:tests-ar.adoc[العربية] | link:tests-ja.adoc[日本語]
+
+== Tests Ausführen
+
+Um Tests in diesem Projekt auszuführen, verwenden Sie folgenden Befehl im Terminal:
+
+[source,shell]
+----
+npm test
+----
+
+Dieser Befehl führt die komplette Jest-Testsuite mit TDD-Abdeckung aus.
+
+=== Alternative Testbefehle
+
+[source,shell]
+----
+# Tests mit Abdeckung ausführen
+npm run test:coverage
+
+# Tests im Watch-Modus ausführen
+npm run test:watch
+
+# Integrierte CLI-Tests ausführen
+node pilot-agent-cli.js test
+----
+
+== Test-Architektur
+
+Unsere Tests folgen der hexagonalen Architektur:
+
+[source]
+----
+tests/
+├── domain/              # Geschäftslogik-Tests
+│   ├── entities/        # Entitäts-Tests
+│   └── services/        # Service-Tests
+└── infrastructure/      # Adapter-Tests
+    └── adapters/        # Infrastruktur-Adapter-Tests
+----
+
+== Voraussetzungen
+
+Stellen Sie sicher, dass Sie sich im Projekthauptverzeichnis befinden und alle Abhängigkeiten mit `npm install` installiert sind.
+
+== Angewendete TDD-Prinzipien
+
+. **Rot**: Einen fehlschlagenden Test schreiben
+. **Grün**: Minimalen Code schreiben, um ihn zum Laufen zu bringen
+. **Refactor**: Code verbessern, während Tests grün bleiben
+
+== Testabdeckung
+
+Aktuelle Abdeckung: **38 Tests bestanden** mit 80% Mindestschwelle für:
+- Verzweigungen
+- Funktionen
+- Zeilen
+- Anweisungen

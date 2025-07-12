@@ -1,0 +1,56 @@
+= عميل GitHub Copilot - معلومات المشروع
+:toc:
+:lang: ar
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | *العربية* | link:info-ja.adoc[日本語]
+
+== نظرة عامة على الملفات
+
+=== طبقة المصادقة والعميل
+
+- **copilot-auth.js**:
+  . يبدأ copilot-language-server
+  . يدير حوار المصادقة
+  . يتحقق ويعرض حالة المصادقة
+  . يوفر واجهة سطر أوامر تفاعلية لمصادقة المستخدم
+
+- **copilot-client.js**:
+  محول تقني لخادم Copilot Language Server. يتعامل مع المصادقة والتواصل مع Copilot والتحقق من التبعيات.
+
+- **pilot-agent-cli.js**:
+  واجهة سطر الأوامر الرئيسية التي تنسق أتمتة المشروع: إدارة التكوين وتنفيذ الوكيل وتفاعل Git.
+
+=== ملخص الهندسة المعمارية
+
+[source]
+----
+copilot-auth.js      → إدارة المصادقة
+copilot-client.js    → محول Copilot التقني (البنية التحتية)
+pilot-agent-cli.js   → نقطة دخول CLI، تنسيق الأعمال
+----
+
+== هندسة المشروع المعمارية
+
+=== تنفيذ الهندسة المعمارية السداسية
+
+[source]
+----
+المجال (نواة العمل)
+├── entities/           # كيانات الأعمال (ProjectConfig)
+├── ports/             # عقود الواجهة (FileSystem, GitRepository)
+└── services/          # تنسيق الأعمال (CopilotAgentService)
+
+البنية التحتية (المحولات)
+├── adapters/          # التنفيذات الملموسة
+├── config/           # إدارة التكوين
+└── process/          # إدارة العمليات
+----
+
+=== مبادئ SOLID المطبقة
+
+- **S**ingle Responsibility: كل فئة لها مسؤولية واحدة
+- **O**pen/Closed: قابل للتوسيع عبر الواجهات (المنافذ)
+- **L**iskov Substitution: المحولات تحترم عقودها
+- **I**nterface Segregation: واجهات متخصصة ومستهدفة
+- **D**ependency Inversion: المجال يعتمد فقط على التجريدات

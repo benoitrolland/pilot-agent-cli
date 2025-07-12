@@ -1,0 +1,56 @@
+= GitHub Copilot クライアント - プロジェクト情報
+:toc:
+:lang: ja
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | *日本語*
+
+== ファイル概要
+
+=== 認証・クライアント層
+
+- **copilot-auth.js**:
+  . copilot-language-serverの起動
+  . 認証ダイアログの管理
+  . 認証ステータスの確認と表示
+  . ユーザー認証用のインタラクティブCLIを提供
+
+- **copilot-client.js**:
+  Copilot Language Serverの技術的アダプター。認証、Copilotとの通信、依存関係の検証を処理。
+
+- **pilot-agent-cli.js**:
+  プロジェクト自動化をオーケストレーションするメインCLIインターフェース：設定管理、エージェント実行、Git連携。
+
+=== アーキテクチャ概要
+
+[source]
+----
+copilot-auth.js      → 認証管理
+copilot-client.js    → 技術的Copilotアダプター（インフラストラクチャ）
+pilot-agent-cli.js   → CLIエントリーポイント、ビジネスオーケストレーション
+----
+
+== プロジェクトアーキテクチャ
+
+=== ヘキサゴナルアーキテクチャ実装
+
+[source]
+----
+ドメイン（ビジネスコア）
+├── entities/           # ビジネスエンティティ (ProjectConfig)
+├── ports/             # インターフェース契約 (FileSystem, GitRepository)
+└── services/          # ビジネスオーケストレーション (CopilotAgentService)
+
+インフラストラクチャ（アダプター）
+├── adapters/          # 具体的実装
+├── config/           # 設定管理
+└── process/          # プロセス管理
+----
+
+=== 適用されたSOLID原則
+
+- **S**ingle Responsibility: 各クラスは単一の責任を持つ
+- **O**pen/Closed: インターフェース（ポート）を介して拡張可能
+- **L**iskov Substitution: アダプターは契約を尊重
+- **I**nterface Segregation: 専門化された、ターゲット指向のインターフェース
+- **D**ependency Inversion: ドメインは抽象化のみに依存

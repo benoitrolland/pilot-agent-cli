@@ -1,0 +1,63 @@
+= 测试指南
+:toc:
+:lang: zh
+
+[.lead]
+link:tests.adoc[English] | link:tests-fr.adoc[Français] | link:tests-de.adoc[Deutsch] | link:tests-es.adoc[Español] | *中文* | link:tests-hi.adoc[हिन्दी] | link:tests-ru.adoc[Русский] | link:tests-ar.adoc[العربية] | link:tests-ja.adoc[日本語]
+
+== 运行测试
+
+要在此项目中执行测试，请在终端中使用以下命令：
+
+[source,shell]
+----
+npm test
+----
+
+此命令运行完整的 Jest 测试套件，包含 TDD 覆盖率。
+
+=== 替代测试命令
+
+[source,shell]
+----
+# 运行带覆盖率的测试
+npm run test:coverage
+
+# 在监视模式下运行测试
+npm run test:watch
+
+# 运行集成 CLI 测试
+node pilot-agent-cli.js test
+----
+
+== 测试架构
+
+我们的测试遵循六边形架构：
+
+[source]
+----
+tests/
+├── domain/              # 业务逻辑测试
+│   ├── entities/        # 实体测试
+│   └── services/        # 服务测试
+└── infrastructure/      # 适配器测试
+    └── adapters/        # 基础设施适配器测试
+----
+
+== 要求
+
+确保您在项目根目录中，并且已使用 `npm install` 安装了所有依赖项。
+
+== 应用的 TDD 原则
+
+. **红色**：编写一个失败的测试
+. **绿色**：编写最少的代码使其通过
+. **重构**：在保持测试绿色的同时改进代码
+
+== 测试覆盖率
+
+当前覆盖率：**38 个测试通过**，最低阈值为 80%：
+- 分支
+- 函数
+- 行
+- 语句

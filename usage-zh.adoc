@@ -1,0 +1,98 @@
+= 使用指南
+:toc:
+:lang: zh
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | link:usage-de.adoc[Deutsch] | link:usage-es.adoc[Español] | *中文* | link:usage-hi.adoc[हिन्दी] | link:usage-ru.adoc[Русский] | link:usage-ar.adoc[العربية] | link:usage-ja.adoc[日本語]
+
+== 安装
+
+[source,shell]
+----
+npm install
+----
+
+== 快速开始
+
+=== 1. 测试 CLI
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. 初始化配置
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. 运行测试
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. 查看配置
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. 运行代理（配置后）
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== 高级用法
+
+=== 认证设置
+使用代理前，设置 GitHub Copilot 认证：
+
+[source,shell]
+----
+# 终端 1：启动认证服务器
+node copilot-auth.js
+
+# 终端 2：使用客户端
+node copilot-client.js demo
+----
+
+=== 自定义配置
+[source,shell]
+----
+# 使用自定义配置文件运行
+node pilot-agent-cli.js run --config ./我的配置.json --verbose
+
+# 查看当前配置
+node pilot-agent-cli.js config
+----
+
+== 可用命令
+
+=== CLI 命令
+- `init` - 创建默认配置文件
+- `run` - 使用当前配置执行 Pilot Agent
+- `config` - 显示当前配置
+- `test` - 运行基本测试和验证
+- `help` - 显示帮助信息
+
+=== 选项
+- `--config <路径>` - 指定配置文件路径
+- `--verbose` - 启用详细日志记录
+
+== 故障排除
+
+=== 依赖项
+确保安装了 GitHub Copilot Language Server：
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== 认证
+验证 GitHub 认证：
+[source,shell]
+----
+gh auth status
+----

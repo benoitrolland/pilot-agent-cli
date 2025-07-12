@@ -1,0 +1,63 @@
+= テストガイド
+:toc:
+:lang: ja
+
+[.lead]
+link:tests.adoc[English] | link:tests-fr.adoc[Français] | link:tests-de.adoc[Deutsch] | link:tests-es.adoc[Español] | link:tests-zh.adoc[中文] | link:tests-hi.adoc[हिन्दी] | link:tests-ru.adoc[Русский] | link:tests-ar.adoc[العربية] | *日本語*
+
+== テストの実行
+
+このプロジェクトでテストを実行するには、ターミナルで次のコマンドを使用してください：
+
+[source,shell]
+----
+npm test
+----
+
+このコマンドは、TDDカバレッジを含む完全なJestテストスイートを実行します。
+
+=== 代替テストコマンド
+
+[source,shell]
+----
+# カバレッジ付きでテストを実行
+npm run test:coverage
+
+# ウォッチモードでテストを実行
+npm run test:watch
+
+# 統合CLIテストを実行
+node pilot-agent-cli.js test
+----
+
+== テストアーキテクチャ
+
+私たちのテストはヘキサゴナルアーキテクチャに従います：
+
+[source]
+----
+tests/
+├── domain/              # ビジネスロジックテスト
+│   ├── entities/        # エンティティテスト
+│   └── services/        # サービステスト
+└── infrastructure/      # アダプターテスト
+    └── adapters/        # インフラストラクチャアダプターテスト
+----
+
+== 要件
+
+プロジェクトのルートディレクトリにいて、`npm install`ですべての依存関係がインストールされていることを確認してください。
+
+== 適用されたTDD原則
+
+. **レッド**：失敗するテストを書く
+. **グリーン**：それを通すための最小限のコードを書く
+. **リファクター**：テストを緑に保ちながらコードを改善する
+
+== テストカバレッジ
+
+現在のカバレッジ：**38テスト合格** 最小80%の閾値で：
+- ブランチ
+- 関数
+- 行
+- ステートメント

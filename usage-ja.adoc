@@ -1,0 +1,98 @@
+= 使用ガイド
+:toc:
+:lang: ja
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | link:usage-de.adoc[Deutsch] | link:usage-es.adoc[Español] | link:usage-zh.adoc[中文] | link:usage-hi.adoc[हिन्दी] | link:usage-ru.adoc[Русский] | link:usage-ar.adoc[العربية] | *日本語*
+
+== インストール
+
+[source,shell]
+----
+npm install
+----
+
+== クイックスタート
+
+=== 1. CLIのテスト
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. 設定の初期化
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. テストの実行
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. 設定の表示
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. エージェントの実行（設定後）
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== 高度な使用法
+
+=== 認証設定
+エージェントを使用する前に、GitHub Copilot認証を設定してください：
+
+[source,shell]
+----
+# ターミナル1：認証サーバーの開始
+node copilot-auth.js
+
+# ターミナル2：クライアントの使用
+node copilot-client.js demo
+----
+
+=== カスタム設定
+[source,shell]
+----
+# カスタム設定ファイルで実行
+node pilot-agent-cli.js run --config ./私の設定.json --verbose
+
+# 現在の設定を表示
+node pilot-agent-cli.js config
+----
+
+== 使用可能なコマンド
+
+=== CLIコマンド
+- `init` - デフォルト設定ファイルを作成
+- `run` - 現在の設定でPilot Agentを実行
+- `config` - 現在の設定を表示
+- `test` - 基本テストと検証を実行
+- `help` - ヘルプメッセージを表示
+
+=== オプション
+- `--config <パス>` - 設定ファイルのパスを指定
+- `--verbose` - 詳細ログを有効化
+
+== トラブルシューティング
+
+=== 依存関係
+GitHub Copilot Language Serverがインストールされていることを確認：
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== 認証
+GitHub認証を確認：
+[source,shell]
+----
+gh auth status
+----

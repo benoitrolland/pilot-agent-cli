@@ -1,0 +1,98 @@
+= دليل الاستخدام
+:toc:
+:lang: ar
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | link:usage-de.adoc[Deutsch] | link:usage-es.adoc[Español] | link:usage-zh.adoc[中文] | link:usage-hi.adoc[हिन्दी] | link:usage-ru.adoc[Русский] | *العربية* | link:usage-ja.adoc[日本語]
+
+== التثبيت
+
+[source,shell]
+----
+npm install
+----
+
+== البداية السريعة
+
+=== 1. اختبار واجهة سطر الأوامر
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. تهيئة التكوين
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. تشغيل الاختبارات
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. عرض التكوين
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. تشغيل الوكيل (بعد التكوين)
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== الاستخدام المتقدم
+
+=== إعداد المصادقة
+قبل استخدام الوكيل، قم بإعداد مصادقة GitHub Copilot:
+
+[source,shell]
+----
+# الطرفية 1: بدء خادم المصادقة
+node copilot-auth.js
+
+# الطرفية 2: استخدام العميل
+node copilot-client.js demo
+----
+
+=== التكوين المخصص
+[source,shell]
+----
+# التشغيل بملف تكوين مخصص
+node pilot-agent-cli.js run --config ./تكويني.json --verbose
+
+# عرض التكوين الحالي
+node pilot-agent-cli.js config
+----
+
+== الأوامر المتاحة
+
+=== أوامر واجهة سطر الأوامر
+- `init` - إنشاء ملف التكوين الافتراضي
+- `run` - تنفيذ Pilot Agent بالتكوين الحالي
+- `config` - عرض التكوين الحالي
+- `test` - تشغيل الاختبارات والتحققات الأساسية
+- `help` - عرض رسالة المساعدة
+
+=== الخيارات
+- `--config <مسار>` - تحديد مسار ملف التكوين
+- `--verbose` - تفعيل التسجيل المفصل
+
+== استكشاف الأخطاء وإصلاحها
+
+=== التبعيات
+تأكد من تثبيت GitHub Copilot Language Server:
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== المصادقة
+التحقق من مصادقة GitHub:
+[source,shell]
+----
+gh auth status
+----

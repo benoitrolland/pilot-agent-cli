@@ -1,0 +1,98 @@
+= उपयोग गाइड
+:toc:
+:lang: hi
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | link:usage-de.adoc[Deutsch] | link:usage-es.adoc[Español] | link:usage-zh.adoc[中文] | *हिन्दी* | link:usage-ru.adoc[Русский] | link:usage-ar.adoc[العربية] | link:usage-ja.adoc[日本語]
+
+== स्थापना
+
+[source,shell]
+----
+npm install
+----
+
+== त्वरित शुरुआत
+
+=== 1. CLI का परीक्षण करें
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. कॉन्फ़िगरेशन प्रारंभ करें
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. परीक्षण चलाएं
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. कॉन्फ़िगरेशन देखें
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. एजेंट चलाएं (कॉन्फ़िगरेशन के बाद)
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== उन्नत उपयोग
+
+=== प्रमाणीकरण सेटअप
+एजेंट का उपयोग करने से पहले, GitHub Copilot प्रमाणीकरण सेट करें:
+
+[source,shell]
+----
+# टर्मिनल 1: प्रमाणीकरण सर्वर शुरू करें
+node copilot-auth.js
+
+# टर्मिनल 2: क्लाइंट का उपयोग करें
+node copilot-client.js demo
+----
+
+=== कस्टम कॉन्फ़िगरेशन
+[source,shell]
+----
+# कस्टम कॉन्फ़िग फ़ाइल के साथ चलाएं
+node pilot-agent-cli.js run --config ./मेरा-कॉन्फ़िग.json --verbose
+
+# वर्तमान कॉन्फ़िगरेशन देखें
+node pilot-agent-cli.js config
+----
+
+== उपलब्ध कमांड
+
+=== CLI कमांड
+- `init` - डिफ़ॉल्ट कॉन्फ़िगरेशन फ़ाइल बनाएं
+- `run` - वर्तमान कॉन्फ़िग के साथ Pilot Agent चलाएं
+- `config` - वर्तमान कॉन्फ़िगरेशन दिखाएं
+- `test` - बुनियादी परीक्षण और सत्यापन चलाएं
+- `help` - सहायता संदेश दिखाएं
+
+=== विकल्प
+- `--config <पथ>` - कॉन्फ़िग फ़ाइल पथ निर्दिष्ट करें
+- `--verbose` - विस्तृत लॉगिंग सक्षम करें
+
+== समस्या निवारण
+
+=== निर्भरताएं
+सुनिश्चित करें कि GitHub Copilot Language Server स्थापित है:
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== प्रमाणीकरण
+GitHub प्रमाणीकरण सत्यापित करें:
+[source,shell]
+----
+gh auth status
+----

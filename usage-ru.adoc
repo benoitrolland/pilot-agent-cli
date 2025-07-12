@@ -1,0 +1,98 @@
+= Руководство по Использованию
+:toc:
+:lang: ru
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | link:usage-de.adoc[Deutsch] | link:usage-es.adoc[Español] | link:usage-zh.adoc[中文] | link:usage-hi.adoc[हिन्दी] | *Русский* | link:usage-ar.adoc[العربية] | link:usage-ja.adoc[日本語]
+
+== Установка
+
+[source,shell]
+----
+npm install
+----
+
+== Быстрый Старт
+
+=== 1. Тестирование CLI
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. Инициализация конфигурации
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. Запуск тестов
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. Просмотр конфигурации
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. Запуск агента (после настройки)
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== Расширенное Использование
+
+=== Настройка Аутентификации
+Перед использованием агента настройте аутентификацию GitHub Copilot:
+
+[source,shell]
+----
+# Терминал 1: Запуск сервера аутентификации
+node copilot-auth.js
+
+# Терминал 2: Использование клиента
+node copilot-client.js demo
+----
+
+=== Пользовательская Конфигурация
+[source,shell]
+----
+# Запуск с пользовательским файлом конфигурации
+node pilot-agent-cli.js run --config ./мой-конфиг.json --verbose
+
+# Просмотр текущей конфигурации
+node pilot-agent-cli.js config
+----
+
+== Доступные Команды
+
+=== CLI Команды
+- `init` - Создать файл конфигурации по умолчанию
+- `run` - Выполнить Pilot Agent с текущей конфигурацией
+- `config` - Показать текущую конфигурацию
+- `test` - Запустить базовые тесты и проверки
+- `help` - Показать справочное сообщение
+
+=== Опции
+- `--config <путь>` - Указать путь к файлу конфигурации
+- `--verbose` - Включить подробное логирование
+
+== Устранение Неполадок
+
+=== Зависимости
+Убедитесь, что GitHub Copilot Language Server установлен:
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== Аутентификация
+Проверить аутентификацию GitHub:
+[source,shell]
+----
+gh auth status
+----

@@ -1,0 +1,56 @@
+= GitHub Copilot क्लाइंट - परियोजना जानकारी
+:toc:
+:lang: hi
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | *हिन्दी* | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語]
+
+== फाइल अवलोकन
+
+=== प्रमाणीकरण और क्लाइंट परत
+
+- **copilot-auth.js**:
+  . copilot-language-server को शुरू करता है
+  . प्रमाणीकरण संवाद का प्रबंधन करता है
+  . प्रमाणीकरण स्थिति की जांच और प्रदर्शन
+  . उपयोगकर्ता प्रमाणीकरण के लिए इंटरैक्टिव CLI प्रदान करता है
+
+- **copilot-client.js**:
+  Copilot Language Server के लिए तकनीकी एडाप्टर। प्रमाणीकरण, Copilot के साथ संचार और निर्भरता सत्यापन को संभालता है।
+
+- **pilot-agent-cli.js**:
+  परियोजना स्वचालन को व्यवस्थित करने वाला मुख्य CLI इंटरफेस: कॉन्फ़िगरेशन प्रबंधन, एजेंट निष्पादन, Git इंटरैक्शन।
+
+=== वास्तुकला सारांश
+
+[source]
+----
+copilot-auth.js      → प्रमाणीकरण प्रबंधन
+copilot-client.js    → तकनीकी Copilot एडाप्टर (अवसंरचना)
+pilot-agent-cli.js   → CLI प्रवेश बिंदु, व्यावसायिक व्यवस्था
+----
+
+== परियोजना वास्तुकला
+
+=== षट्कोणीय वास्तुकला कार्यान्वयन
+
+[source]
+----
+डोमेन (व्यावसायिक कोर)
+├── entities/           # व्यावसायिक इकाइयां (ProjectConfig)
+├── ports/             # इंटरफेस अनुबंध (FileSystem, GitRepository)
+└── services/          # व्यावसायिक व्यवस्था (CopilotAgentService)
+
+अवसंरचना (एडाप्टर)
+├── adapters/          # ठोस कार्यान्वयन
+├── config/           # कॉन्फ़िगरेशन प्रबंधन
+└── process/          # प्रक्रिया प्रबंधन
+----
+
+=== लागू SOLID सिद्धांत
+
+- **S**ingle Responsibility: प्रत्येक वर्ग की एक जिम्मेदारी है
+- **O**pen/Closed: इंटरफेस (पोर्ट्स) के माध्यम से विस्तार योग्य
+- **L**iskov Substitution: एडाप्टर अपने अनुबंधों का सम्मान करते हैं
+- **I**nterface Segregation: विशेष, लक्षित इंटरफेस
+- **D**ependency Inversion: डोमेन केवल अमूर्तताओं पर निर्भर करता है
