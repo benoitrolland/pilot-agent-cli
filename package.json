@@ -1,6 +1,6 @@
 {
   "name": "copilot-pilot-agent",
-  "version": "1.0.0",
+  "version": "1.0.1-beta.0",
   "description": "GitHub Copilot automation tool with configuration-driven file management",
   "main": "copilot-client.js",
   "bin": {
@@ -36,7 +36,11 @@
       "!src/**/index.js"
     ],
     "coverageDirectory": "coverage",
-    "coverageReporters": ["text", "lcov", "html"],
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ],
     "coverageThreshold": {
       "global": {
         "branches": 80,
@@ -46,7 +50,9 @@
       }
     },
     "verbose": true,
-    "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"]
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ]
   },
   "keywords": [
     "github-copilot",
