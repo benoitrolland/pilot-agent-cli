@@ -1,5 +1,8 @@
 class ProjectConfig {
     constructor(config = {}) {
+        // Validation précoce avant sanitization
+        this.validateInputTypes(config);
+
         this.rootDir = config.rootDir || './';
         this.targetFiles = this.sanitizeFiles(config.targetFiles || []);
         this.readFiles = this.sanitizeFiles(config.readFiles || []);
@@ -12,6 +15,30 @@ class ProjectConfig {
         this.validate();
     }
 
+    validateInputTypes(config) {
+        // Validate rootDir type before assignment
+        if (config.rootDir !== undefined &&
+            (config.rootDir === null || typeof config.rootDir !== 'string')) {
+            throw new Error('Root directory path must be a valid string');
+        }
+
+        // Validate targetFiles type before sanitization
+        if (config.targetFiles !== undefined && !Array.isArray(config.targetFiles)) {
+            throw new Error('targetFiles must be an array');
+        }
+
+        // Validate readFiles type before sanitization
+        if (config.readFiles !== undefined && !Array.isArray(config.readFiles)) {
+            throw new Error('readFiles must be an array');
+        }
+
+        // Validate prompt type
+        if (config.prompt !== undefined && config.prompt !== null &&
+            typeof config.prompt !== 'string') {
+            throw new Error('Prompt must be a non-empty string');
+        }
+    }
+
     sanitizeFiles(files) {
         if (!Array.isArray(files)) {
             return [];
@@ -20,34 +47,16 @@ class ProjectConfig {
     }
 
     validate() {
-        // Validate rootDir
-        if (this.rootDir === null || this.rootDir === undefined || typeof this.rootDir !== 'string') {
-            throw new Error('Root directory path must be a valid string');
-        }
-
-        // Validate prompt only when required (not empty constructor)
+        // Validate prompt content only when target files are present
         if (this.prompt !== undefined && this.prompt !== null) {
-            if (typeof this.prompt !== 'string') {
-                throw new Error('Prompt must be a non-empty string');
-            }
             if (this.prompt.trim().length === 0 && this.targetFiles.length > 0) {
                 throw new Error('Prompt is required');
             }
         }
 
-        // Validate targetFiles type
-        if (!Array.isArray(this.targetFiles)) {
-            throw new Error('targetFiles must be an array');
-        }
-
         // Validate targetFiles content only when prompt is provided
         if (this.prompt && this.prompt.trim().length > 0 && this.targetFiles.length === 0) {
             throw new Error('At least one target file is required');
-        }
-
-        // Validate readFiles
-        if (!Array.isArray(this.readFiles)) {
-            throw new Error('readFiles must be an array');
         }
     }
 

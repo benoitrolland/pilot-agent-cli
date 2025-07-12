@@ -62,6 +62,8 @@ class CopilotAgentService {
                 if (await this.fileSystem.exists(fullPath)) {
                     contextContent[filePath] = await this.fileSystem.readFile(fullPath);
                     this.logger.debug(`Read context file: ${filePath}`);
+                } else {
+                    this.logger.warn(`Could not read context file ${filePath}: File does not exist`);
                 }
             } catch (error) {
                 this.logger.warn(`Could not read context file ${filePath}: ${error.message}`);
