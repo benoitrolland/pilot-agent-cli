@@ -1,43 +1,29 @@
 class ProjectConfig {
-    constructor({
-        rootDir = process.cwd(),
-        targetFiles = [],
-        readFiles = [],
-        prompt = '',
-        autoCommit = true,
-        autoAccept = true,
-        commitMessage = '',
-        squashOnSuccess = true
-    } = {}) {
-        this.rootDir = this.validatePath(rootDir);
-        this.targetFiles = this.validateFiles(targetFiles);
-        this.readFiles = this.validateFiles(readFiles);
-        this.prompt = this.validatePrompt(prompt);
-        this.autoCommit = autoCommit;
-        this.autoAccept = autoAccept;
-        this.commitMessage = commitMessage;
-        this.squashOnSuccess = squashOnSuccess;
+    constructor(config = {}) {
+        this.rootDir = config.rootDir || './';
+        this.targetFiles = config.targetFiles || [];
+        this.readFiles = config.readFiles || [];
+        this.prompt = config.prompt || '';
+        this.autoCommit = config.autoCommit !== undefined ? config.autoCommit : false;
+        this.autoAccept = config.autoAccept !== undefined ? config.autoAccept : false;
+        this.commitMessage = config.commitMessage || '';
+        this.squashOnSuccess = config.squashOnSuccess !== undefined ? config.squashOnSuccess : false;
+        
+        this.validate();
     }
 
-    validatePath(path) {
-        if (!path || typeof path !== 'string') {
-            throw new Error('Root directory path must be a valid string');
+    validate() {
+        if (!this.prompt || this.prompt.trim().length === 0) {
+            throw new Error('Prompt is required');
         }
-        return path;
-    }
-
-    validateFiles(files) {
-        if (!Array.isArray(files)) {
-            throw new Error('Files must be an array');
+        
+        if (!Array.isArray(this.targetFiles) || this.targetFiles.length === 0) {
+            throw new Error('At least one target file is required');
         }
-        return files.filter(file => file && typeof file === 'string');
-    }
-
-    validatePrompt(prompt) {
-        if (!prompt || typeof prompt !== 'string') {
-            throw new Error('Prompt must be a non-empty string');
+        
+        if (!Array.isArray(this.readFiles)) {
+            throw new Error('readFiles must be an array');
         }
-        return prompt.trim();
     }
 
     toJSON() {

@@ -1,64 +1,125 @@
-const simpleGit = require('simple-git');
 const GitRepository = require('../../domain/ports/GitRepository');
 
 class SimpleGitAdapter extends GitRepository {
     constructor(workingDir) {
         super();
-        this.git = simpleGit(workingDir);
+        this.workingDir = workingDir;
+        this.git = null;
+        this.initGit();
+    }
+
+    initGit() {
+        try {
+            const simpleGit = require('simple-git');
+            this.git = simpleGit(this.workingDir);
+        } catch (error) {
+            // Fallback to basic implementation if simple-git is not available
+            console.warn('simple-git not available, using fallback Git implementation');
+            this.git = new FallbackGit(this.workingDir);
+        }
     }
 
     async getCurrentBranch() {
-        const status = await this.git.status();
-        return status.current;
+        if (this.git.branch) {
+            const result = await this.git.branch();
+            return result.current;
+        }
+        return await this.git.getCurrentBranch();
     }
 
-    async getCommitsSince(ref) {
-        const log = await this.git.log({ from: ref, to: 'HEAD' });
-        return log.all;
+    async createBranch(branchName) {
+        if (this.git.checkoutLocalBranch) {
+            await this.git.checkoutLocalBranch(branchName);
+        } else {
+            await this.git.createBranch(branchName);
+        }
     }
 
-    async commit(message, files = []) {
-        if (files.length > 0) {
+    async checkoutBranch(branchName) {
+        if (this.git.checkout) {
+            await this.git.checkout(branchName);
+        } else {
+            await this.git.checkoutBranch(branchName);
+        }
+    }
+
+    async addFiles(files) {
+        if (this.git.add) {
             await this.git.add(files);
-        }
-        return await this.git.commit(message);
-    }
-
-    async squashCommits(fromRef, toRef, message) {
-        // Reset to fromRef keeping working directory
-        await this.git.reset(['--soft', fromRef]);
-        // Commit all changes with new message
-        return await this.git.commit(message);
-    }
-
-    async fixupCommits(commits) {
-        // Implementation for fixup commits
-        for (const commit of commits) {
-            await this.git.rebase(['--interactive', '--autosquash', commit.hash]);
+        } else {
+            await this.git.addFiles(files);
         }
     }
 
-    async getLastSuccessCommit() {
+    async addFile(file) {
+        await this.addFiles([file]);
+    }
+
+    async commit(message) {
+        if (this.git.commit) {
+            await this.git.commit(message);
+        } else {
+            await this.git.commitChanges(message);
+        }
+    }
+
+    async getStatus() {
+        if (this.git.status) {
+            return await this.git.status();
+        }
+        return await this.git.getStatus();
+    }
+
+    async hasChanges() {
+        const status = await this.getStatus();
+        if (status.files) {
+            return status.files.length > 0;
+        }
+        return status.hasChanges || false;
+    }
+}
+
+// Fallback Git implementation when simple-git is not available
+class FallbackGit {
+    constructor(workingDir) {
+        this.workingDir = workingDir;
+        this.exec = require('child_process').promisify || require('util').promisify(require('child_process').exec);
+    }
+
+    async getCurrentBranch() {
         try {
-            const log = await this.git.log();
-            const successCommit = log.all.find(commit => 
-                commit.message.toLowerCase().includes('success') ||
-                commit.message.toLowerCase().includes('goal') ||
-                commit.message.toLowerCase().includes('completed')
-            );
-            return successCommit ? successCommit.hash : null;
+            const { stdout } = await this.exec('git branch --show-current', { cwd: this.workingDir });
+            return stdout.trim();
         } catch (error) {
-            return null;
+            return 'main'; // fallback
         }
     }
 
-    async isWorkingTreeClean() {
-        const status = await this.git.status();
-        return status.isClean();
+    async createBranch(branchName) {
+        await this.exec(`git checkout -b ${branchName}`, { cwd: this.workingDir });
     }
 
-    async stageFiles(files) {
-        return await this.git.add(files);
+    async checkoutBranch(branchName) {
+        await this.exec(`git checkout ${branchName}`, { cwd: this.workingDir });
+    }
+
+    async addFiles(files) {
+        const fileList = Array.isArray(files) ? files.join(' ') : files;
+        await this.exec(`git add ${fileList}`, { cwd: this.workingDir });
+    }
+
+    async commitChanges(message) {
+        await this.exec(`git commit -m "${message}"`, { cwd: this.workingDir });
+    }
+
+    async getStatus() {
+        try {
+            const { stdout } = await this.exec('git status --porcelain', { cwd: this.workingDir });
+            const files = stdout.trim().split('\n').filter(line => line.trim());
+            return { files, hasChanges: files.length > 0 };
+        } catch (error) {
+            return { files: [], hasChanges: false };
+        }
     }
 }
 

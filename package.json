@@ -1,0 +1,45 @@
+{
+  "name": "copilot-pilot-agent",
+  "version": "1.0.0",
+  "description": "GitHub Copilot automation tool with configuration-driven file management",
+  "main": "copilot-client.js",
+  "bin": {
+    "pilot-agent-cli": "./bin/pilot-agent-cli.js"
+  },
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "start": "node copilot-client.js",
+    "agent:init": "node pilot-agent-cli.js init",
+    "agent:run": "node pilot-agent-cli.js run",
+    "agent:config": "node pilot-agent-cli.js config",
+    "agent:test": "node pilot-agent-cli.js test",
+    "install:global": "npm install -g ."
+  },
+  "dependencies": {
+    "simple-git": "^3.19.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/**/*.test.js"
+    ]
+  },
+  "keywords": [
+    "github-copilot",
+    "automation",
+    "cli",
+    "code-generation",
+    "hexagonal-architecture",
+    "clean-code"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

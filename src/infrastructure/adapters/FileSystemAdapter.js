@@ -1,7 +1,8 @@
+const FileSystem = require('../../domain/ports/FileSystem');
 const fs = require('fs').promises;
 const path = require('path');
 
-class FileSystemAdapter {
+class FileSystemAdapter extends FileSystem {
     async exists(filePath) {
         try {
             await fs.access(filePath);
@@ -11,36 +12,30 @@ class FileSystemAdapter {
         }
     }
 
-    async readFile(filePath, encoding = 'utf8') {
-        return await fs.readFile(filePath, encoding);
+    async readFile(filePath) {
+        return await fs.readFile(filePath, 'utf8');
     }
 
-    async writeFile(filePath, content, encoding = 'utf8') {
-        return await fs.writeFile(filePath, content, encoding);
+    async writeFile(filePath, content) {
+        // Ensure directory exists
+        const dir = path.dirname(filePath);
+        await this.createDirectory(dir);
+        
+        await fs.writeFile(filePath, content, 'utf8');
     }
 
-    async ensureDir(dirPath) {
-        return await fs.mkdir(dirPath, { recursive: true });
+    async createDirectory(dirPath) {
+        try {
+            await fs.mkdir(dirPath, { recursive: true });
+        } catch (error) {
+            if (error.code !== 'EEXIST') {
+                throw error;
+            }
+        }
     }
 
     resolve(...paths) {
         return path.resolve(...paths);
-    }
-
-    dirname(filePath) {
-        return path.dirname(filePath);
-    }
-
-    extname(filePath) {
-        return path.extname(filePath);
-    }
-
-    async readdir(dirPath) {
-        return await fs.readdir(dirPath);
-    }
-
-    async stat(filePath) {
-        return await fs.stat(filePath);
     }
 }
 

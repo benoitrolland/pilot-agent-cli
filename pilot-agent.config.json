@@ -1,0 +1,18 @@
+{
+  "rootDir": "./",
+  "targetFiles": [
+    "src/components/Header.js",
+    "src/utils/helpers.js",
+    "docs/API.md"
+  ],
+  "readFiles": [
+    "README.md",
+    "package.json",
+    "src/types/index.ts"
+  ],
+  "prompt": "Add comprehensive error handling and logging to all components. Follow clean code principles and add JSDoc comments.",
+  "autoCommit": true,
+  "autoAccept": true,
+  "commitMessage": "",
+  "squashOnSuccess": true
+}

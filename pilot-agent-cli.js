@@ -1,11 +1,45 @@
 #!/usr/bin/env node
 
-const CopilotClient = require('./copilot-client');
-const CopilotAgentService = require('./src/domain/services/CopilotAgentService');
-const SimpleGitAdapter = require('./src/infrastructure/adapters/SimpleGitAdapter');
-const FileSystemAdapter = require('./src/infrastructure/adapters/FileSystemAdapter');
-const ConfigLoader = require('./src/infrastructure/config/ConfigLoader');
-const ProjectConfig = require('./src/domain/entities/ProjectConfig');
+const path = require('path');
+const fs = require('fs');
+
+// Ensure all required directories exist
+const requiredDirs = [
+    path.join(__dirname, 'src', 'domain', 'entities'),
+    path.join(__dirname, 'src', 'domain', 'ports'), 
+    path.join(__dirname, 'src', 'domain', 'services'),
+    path.join(__dirname, 'src', 'infrastructure', 'adapters'),
+    path.join(__dirname, 'src', 'infrastructure', 'config'),
+    path.join(__dirname, 'src', 'core')
+];
+
+requiredDirs.forEach(dir => {
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+});
+
+// Import dependencies with fallbacks
+let CopilotClient, CopilotAgentService, SimpleGitAdapter, FileSystemAdapter, ConfigLoader, ProjectConfig;
+
+try {
+    CopilotClient = require('./copilot-client');
+} catch (error) {
+    console.error('❌ Could not load CopilotClient:', error.message);
+    process.exit(1);
+}
+
+try {
+    CopilotAgentService = require('./src/domain/services/CopilotAgentService');
+    SimpleGitAdapter = require('./src/infrastructure/adapters/SimpleGitAdapter');
+    FileSystemAdapter = require('./src/infrastructure/adapters/FileSystemAdapter');
+    ConfigLoader = require('./src/infrastructure/config/ConfigLoader');
+    ProjectConfig = require('./src/domain/entities/ProjectConfig');
+} catch (error) {
+    console.error('❌ Could not load required modules. Please ensure all files are properly created.');
+    console.error('Error:', error.message);
+    process.exit(1);
+}
 
 class Logger {
     constructor(verbose = false) {
@@ -53,6 +87,9 @@ class PilotAgentCLI {
                 case 'config':
                     await this.showConfig(args, logger);
                     break;
+                case 'test':
+                    await this.runTests(args, logger);
+                    break;
                 case 'help':
                 default:
                     this.showHelp();
@@ -80,36 +117,70 @@ class PilotAgentCLI {
         
         logger.info(`✅ Created default config file: ${configPath}`);
         logger.info('📝 Edit the config file to customize your settings');
+        
+        // Also create a sample config with examples
+        const exampleConfig = new ProjectConfig({
+            rootDir: "./",
+            targetFiles: [
+                "src/components/Header.js",
+                "src/utils/helpers.js", 
+                "docs/API.md"
+            ],
+            readFiles: [
+                "README.md",
+                "package.json",
+                "src/types/index.ts"
+            ],
+            prompt: "Add comprehensive error handling and logging to all components. Follow clean code principles and add JSDoc comments.",
+            autoCommit: true,
+            autoAccept: true,
+            commitMessage: "",
+            squashOnSuccess: true
+        });
+
+        const examplePath = configPath.replace('.json', '.example.json');
+        await this.configLoader.saveConfig(exampleConfig, examplePath);
+        logger.info(`📄 Created example config: ${examplePath}`);
     }
 
     async runAgent(args, logger) {
         const configPath = this.getConfigPath(args);
-        const config = await this.configLoader.loadConfig(configPath);
         
-        logger.info('🤖 Starting Pilot Agent');
-        logger.debug(`Using config: ${configPath}`);
-        
-        // Initialize dependencies
-        const copilotClient = new CopilotClient(logger.verbose);
-        const gitRepository = new SimpleGitAdapter(config.rootDir);
-        
-        // Create and run service
-        const agentService = new CopilotAgentService(
-            copilotClient,
-            gitRepository,
-            this.fileSystem,
-            logger
-        );
-        
-        const result = await agentService.executeProject(config);
-        
-        if (result.success) {
-            logger.info('🎉 Pilot Agent completed successfully!');
-            if (result.changes.length > 0) {
-                logger.info(`📝 Modified ${result.changes.length} file(s)`);
-                result.changes.forEach(change => {
-                    logger.info(`  ${change.type}: ${change.file}`);
-                });
+        try {
+            const config = await this.configLoader.loadConfig(configPath);
+            
+            logger.info('🤖 Starting Pilot Agent');
+            logger.debug(`Using config: ${configPath}`);
+            
+            // Initialize dependencies
+            const copilotClient = new CopilotClient(logger.verbose);
+            const gitRepository = new SimpleGitAdapter(config.rootDir);
+            
+            // Create and run service
+            const agentService = new CopilotAgentService(
+                copilotClient,
+                gitRepository,
+                this.fileSystem,
+                logger
+            );
+            
+            const result = await agentService.executeProject(config);
+            
+            if (result.success) {
+                logger.info('🎉 Pilot Agent completed successfully!');
+                if (result.changes.length > 0) {
+                    logger.info(`📝 Modified ${result.changes.length} file(s)`);
+                    result.changes.forEach(change => {
+                        logger.info(`  ${change.type}: ${change.file}`);
+                    });
+                }
+            }
+        } catch (error) {
+            if (error.message.includes('Failed to load config')) {
+                logger.error('Configuration file not found or invalid');
+                logger.info('💡 Run "node pilot-agent-cli.js init" to create a default config');
+            } else {
+                throw error;
             }
         }
     }
@@ -123,7 +194,42 @@ class PilotAgentCLI {
             console.log(JSON.stringify(config.toJSON(), null, 2));
         } catch (error) {
             logger.error(`Could not load config: ${error.message}`);
-            logger.info('💡 Run "pilot-agent-cli init" to create a default config');
+            logger.info('💡 Run "node pilot-agent-cli.js init" to create a default config');
+        }
+    }
+
+    async runTests(args, logger) {
+        logger.info('🧪 Running tests...');
+        
+        // Simple test runner for our domain logic
+        try {
+            // Test ProjectConfig
+            const testConfig = new ProjectConfig({
+                rootDir: './test',
+                prompt: 'Test prompt',
+                targetFiles: ['test.js']
+            });
+            
+            if (testConfig.rootDir !== './test') {
+                throw new Error('ProjectConfig test failed');
+            }
+            
+            logger.info('✅ ProjectConfig tests passed');
+            
+            // Test FileSystemAdapter
+            const fileAdapter = new FileSystemAdapter();
+            const testPath = fileAdapter.resolve(__dirname, 'test.txt');
+            
+            if (!testPath.includes(__dirname)) {
+                throw new Error('FileSystemAdapter test failed');
+            }
+            
+            logger.info('✅ FileSystemAdapter tests passed');
+            logger.info('🎉 All tests passed!');
+            
+        } catch (error) {
+            logger.error(`Tests failed: ${error.message}`);
+            process.exit(1);
         }
     }
 
@@ -138,12 +244,13 @@ class PilotAgentCLI {
         console.log('🤖 Pilot Agent CLI - GitHub Copilot Automation Tool');
         console.log('=================================================');
         console.log('');
-        console.log('Usage: pilot-agent-cli <command> [options]');
+        console.log('Usage: node pilot-agent-cli.js <command> [options]');
         console.log('');
         console.log('Commands:');
         console.log('  init                          Create default configuration file');
         console.log('  run                           Execute Pilot Agent with current config');
         console.log('  config                        Show current configuration');
+        console.log('  test                          Run basic tests');
         console.log('  help                          Show this help message');
         console.log('');
         console.log('Options:');
@@ -151,10 +258,16 @@ class PilotAgentCLI {
         console.log('  --verbose                     Enable verbose logging');
         console.log('');
         console.log('Examples:');
-        console.log('  pilot-agent-cli init');
-        console.log('  pilot-agent-cli run --verbose');
-        console.log('  pilot-agent-cli run --config ./custom-config.json');
-        console.log('  pilot-agent-cli config');
+        console.log('  node pilot-agent-cli.js init');
+        console.log('  node pilot-agent-cli.js run --verbose');
+        console.log('  node pilot-agent-cli.js run --config ./custom-config.json');
+        console.log('  node pilot-agent-cli.js config');
+        console.log('  node pilot-agent-cli.js test');
+        console.log('');
+        console.log('Getting Started:');
+        console.log('  1. node pilot-agent-cli.js init      # Create config file');
+        console.log('  2. Edit pilot-agent.config.json      # Customize settings');
+        console.log('  3. node pilot-agent-cli.js run       # Execute automation');
         console.log('');
         console.log('Configuration File Structure:');
         console.log('  {');
@@ -167,6 +280,11 @@ class PilotAgentCLI {
         console.log('    "commitMessage": "",               // Custom commit message');
         console.log('    "squashOnSuccess": true            // Squash commits on goal completion');
         console.log('  }');
+        console.log('');
+        console.log('Prerequisites:');
+        console.log('  - npm install -g @github/copilot-language-server');
+        console.log('  - GitHub Copilot subscription');
+        console.log('  - Authenticated GitHub CLI (gh auth login)');
     }
 }
 

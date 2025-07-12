@@ -1,0 +1,32 @@
+= Usage
+
+== Installation
+
+npm install
+
+// == Initialize configuration
+// pilot-agent-cli init
+
+// == Run with default config
+// pilot-agent-cli run
+
+// == Run with custom config and verbose logging
+// pilot-agent-cli run --config ./my-config.json --verbose
+
+// == View current configuration
+// pilot-agent-cli config
+
+== Test the CLI
+node pilot-agent-cli.js help
+
+== Initialize configuration
+node pilot-agent-cli.js init
+
+== Run tests
+node pilot-agent-cli.js test
+
+== View configuration
+node pilot-agent-cli.js config
+
+== Run the agent (after configuring)
+node pilot-agent-cli.js run --verbose

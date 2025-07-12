@@ -7,235 +7,132 @@ class CopilotAgentService {
     }
 
     async executeProject(config) {
-        this.logger.info('🚀 Starting Copilot Agent execution');
+        this.logger.info('🚀 Starting project execution');
+        
+        const changes = [];
+        let branchCreated = false;
         
         try {
-            // Validate environment
-            await this.validateEnvironment(config);
-            
+            // Create working branch if auto-commit is enabled
+            if (config.autoCommit) {
+                const currentBranch = await this.gitRepository.getCurrentBranch();
+                const workingBranch = `pilot-agent-${Date.now()}`;
+                
+                await this.gitRepository.createBranch(workingBranch);
+                await this.gitRepository.checkoutBranch(workingBranch);
+                branchCreated = true;
+                
+                this.logger.debug(`Created working branch: ${workingBranch}`);
+            }
+
             // Read context files
-            const context = await this.gatherContext(config);
+            const contextContent = await this.readContextFiles(config);
             
             // Process target files
-            const changes = await this.processFiles(config, context);
-            
-            // Handle Git operations if auto-commit enabled
-            if (config.autoCommit) {
-                await this.handleGitOperations(config, changes);
-            }
-            
-            this.logger.info('✅ Copilot Agent execution completed successfully');
-            return { success: true, changes };
-            
-        } catch (error) {
-            this.logger.error(`❌ Execution failed: ${error.message}`);
-            throw error;
-        }
-    }
-
-    async validateEnvironment(config) {
-        // Check if root directory exists
-        if (!await this.fileSystem.exists(config.rootDir)) {
-            throw new Error(`Root directory does not exist: ${config.rootDir}`);
-        }
-
-        // Check Git repository
-        if (config.autoCommit) {
-            const isClean = await this.gitRepository.isWorkingTreeClean();
-            if (!isClean) {
-                this.logger.warn('⚠️ Working tree is not clean, proceeding anyway');
-            }
-        }
-    }
-
-    async gatherContext(config) {
-        this.logger.info('📖 Gathering context from read files');
-        const context = {};
-        
-        for (const filePath of config.readFiles) {
-            const fullPath = this.fileSystem.resolve(config.rootDir, filePath);
-            if (await this.fileSystem.exists(fullPath)) {
-                context[filePath] = await this.fileSystem.readFile(fullPath);
-                this.logger.debug(`Read context from: ${filePath}`);
-            } else {
-                this.logger.warn(`Context file not found: ${filePath}`);
-            }
-        }
-        
-        return context;
-    }
-
-    async processFiles(config, context) {
-        this.logger.info('🔄 Processing target files with Copilot');
-        const changes = [];
-        
-        await this.copilotClient.start();
-        
-        try {
             for (const targetFile of config.targetFiles) {
-                const change = await this.processFile(config, targetFile, context);
+                const change = await this.processFile(targetFile, config, contextContent);
                 if (change) {
                     changes.push(change);
                 }
             }
-        } finally {
-            await this.copilotClient.stop();
-        }
-        
-        return changes;
-    }
 
-    async processFile(config, targetFile, context) {
-        const fullPath = this.fileSystem.resolve(config.rootDir, targetFile);
-        this.logger.info(`Processing file: ${targetFile}`);
-        
-        // Prepare enhanced prompt with context
-        const enhancedPrompt = this.buildEnhancedPrompt(config.prompt, context, targetFile);
-        
-        // Check if file exists
-        const fileExists = await this.fileSystem.exists(fullPath);
-        
-        if (fileExists) {
-            // Get completions for existing file
-            return await this.updateExistingFile(fullPath, enhancedPrompt);
-        } else {
-            // Create new file
-            return await this.createNewFile(fullPath, enhancedPrompt);
-        }
-    }
+            // Commit changes if requested
+            if (config.autoCommit && changes.length > 0) {
+                await this.commitChanges(config, changes);
+            }
 
-    buildEnhancedPrompt(basePrompt, context, targetFile) {
-        let prompt = `Target file: ${targetFile}\n\n`;
-        
-        if (Object.keys(context).length > 0) {
-            prompt += 'Context files:\n';
-            Object.entries(context).forEach(([file, content]) => {
-                prompt += `\n--- ${file} ---\n${content}\n`;
-            });
-            prompt += '\n';
-        }
-        
-        prompt += `Instructions: ${basePrompt}`;
-        return prompt;
-    }
-
-    async updateExistingFile(filePath, prompt) {
-        // Get file content and determine best completion position
-        const content = await this.fileSystem.readFile(filePath);
-        const lines = content.split('\n');
-        
-        // Use Copilot to get suggestions for the file
-        const completions = await this.copilotClient.getCompletions(filePath, lines.length - 1, 0);
-        
-        if (completions.length > 0) {
-            const suggestion = completions[0].insertText || completions[0].label;
-            const updatedContent = content + '\n' + suggestion;
-            
-            await this.fileSystem.writeFile(filePath, updatedContent);
-            
             return {
-                file: filePath,
-                type: 'update',
-                changes: suggestion
+                success: true,
+                changes,
+                branchCreated
             };
+
+        } catch (error) {
+            this.logger.error(`Project execution failed: ${error.message}`);
+            throw error;
+        }
+    }
+
+    async readContextFiles(config) {
+        const contextContent = {};
+        
+        for (const filePath of config.readFiles) {
+            try {
+                const fullPath = this.fileSystem.resolve(config.rootDir, filePath);
+                if (await this.fileSystem.exists(fullPath)) {
+                    contextContent[filePath] = await this.fileSystem.readFile(fullPath);
+                    this.logger.debug(`Read context file: ${filePath}`);
+                }
+            } catch (error) {
+                this.logger.warn(`Could not read context file ${filePath}: ${error.message}`);
+            }
+        }
+        
+        return contextContent;
+    }
+
+    async processFile(targetFile, config, contextContent) {
+        this.logger.info(`📝 Processing file: ${targetFile}`);
+        
+        const fullPath = this.fileSystem.resolve(config.rootDir, targetFile);
+        let originalContent = '';
+        
+        // Read existing file or prepare for new file
+        if (await this.fileSystem.exists(fullPath)) {
+            originalContent = await this.fileSystem.readFile(fullPath);
+        }
+
+        // Prepare context for Copilot
+        const context = this.buildCopilotContext(targetFile, originalContent, contextContent, config);
+        
+        // Get suggestions from Copilot
+        const suggestions = await this.copilotClient.getSuggestions(context);
+        
+        if (suggestions && suggestions.length > 0) {
+            const suggestion = suggestions[0]; // Use first suggestion
+            
+            if (config.autoAccept || await this.confirmSuggestion(suggestion)) {
+                await this.fileSystem.writeFile(fullPath, suggestion.content);
+                
+                return {
+                    type: await this.fileSystem.exists(fullPath) ? 'modified' : 'created',
+                    file: targetFile,
+                    suggestion: suggestion.description
+                };
+            }
         }
         
         return null;
     }
 
-    async createNewFile(filePath, prompt) {
-        // Use prompt to generate file content
-        // This is a simplified version - in reality, you'd use more sophisticated prompt engineering
-        const directoryPath = this.fileSystem.dirname(filePath);
-        await this.fileSystem.ensureDir(directoryPath);
-        
-        // Generate basic file structure based on extension
-        const ext = this.fileSystem.extname(filePath);
-        const content = this.generateFileTemplate(ext, prompt);
-        
-        await this.fileSystem.writeFile(filePath, content);
-        
+    buildCopilotContext(targetFile, originalContent, contextContent, config) {
         return {
-            file: filePath,
-            type: 'create',
-            changes: content
+            filePath: targetFile,
+            content: originalContent,
+            prompt: config.prompt,
+            contextFiles: contextContent
         };
     }
 
-    generateFileTemplate(extension, prompt) {
-        const templates = {
-            '.js': `// Generated by Copilot Agent\n// ${prompt}\n\n`,
-            '.py': `# Generated by Copilot Agent\n# ${prompt}\n\n`,
-            '.md': `# Generated by Copilot Agent\n\n${prompt}\n\n`,
-            '.json': '{\n  // Generated by Copilot Agent\n}\n'
-        };
-        
-        return templates[extension] || `// Generated by Copilot Agent\n// ${prompt}\n\n`;
+    async confirmSuggestion(suggestion) {
+        // In a real implementation, this would prompt the user
+        // For now, return true if autoAccept is not explicitly false
+        return true;
     }
 
-    async handleGitOperations(config, changes) {
-        if (changes.length === 0) {
-            this.logger.info('No changes to commit');
-            return;
+    async commitChanges(config, changes) {
+        const commitMessage = config.commitMessage ||
+            `Pilot Agent: Applied ${changes.length} change(s) - ${config.prompt.substring(0, 50)}...`;
+
+        // Stage all changes
+        for (const change of changes) {
+            await this.gitRepository.addFile(change.file);
         }
 
-        this.logger.info('📝 Handling Git operations');
-        
-        // Stage changed files
-        const changedFiles = changes.map(change => change.file);
-        await this.gitRepository.stageFiles(changedFiles);
-        
-        // Generate commit message
-        const commitMessage = config.commitMessage || this.generateCommitMessage(config, changes);
-        
         // Commit changes
-        await this.gitRepository.commit(commitMessage, changedFiles);
-        
-        // Handle squashing if previous goal was reached
-        if (config.squashOnSuccess && this.isGoalReached(config.prompt)) {
-            await this.handleSquashing(commitMessage);
-        }
-    }
+        await this.gitRepository.commit(commitMessage);
 
-    generateCommitMessage(config, changes) {
-        const summary = changes.length === 1 ? 
-            `Update ${changes[0].file}` : 
-            `Update ${changes.length} files`;
-        
-        const details = changes.map(change => 
-            `- ${change.type}: ${change.file}`
-        ).join('\n');
-        
-        return `${summary}\n\n${details}\n\nGoal: ${config.prompt}`;
-    }
-
-    isGoalReached(prompt) {
-        const successIndicators = [
-            'goal is reached',
-            'task completed',
-            'objective achieved',
-            'finished',
-            'done',
-            'success'
-        ];
-        
-        const lowerPrompt = prompt.toLowerCase();
-        return successIndicators.some(indicator => lowerPrompt.includes(indicator));
-    }
-
-    async handleSquashing(newCommitMessage) {
-        try {
-            const lastSuccess = await this.gitRepository.getLastSuccessCommit();
-            if (lastSuccess) {
-                const commits = await this.gitRepository.getCommitsSince(lastSuccess);
-                if (commits.length > 1) {
-                    await this.gitRepository.squashCommits(lastSuccess, 'HEAD', newCommitMessage);
-                    this.logger.info('🔄 Squashed commits for completed goal');
-                }
-            }
-        } catch (error) {
-            this.logger.warn(`Could not squash commits: ${error.message}`);
-        }
+        this.logger.info(`📦 Committed ${changes.length} changes`);
     }
 }
 

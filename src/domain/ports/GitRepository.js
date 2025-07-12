@@ -1,34 +1,30 @@
 class GitRepository {
     async getCurrentBranch() {
-        throw new Error('Method must be implemented');
+        throw new Error('Method not implemented');
     }
 
-    async getCommitsSince(ref) {
-        throw new Error('Method must be implemented');
+    async createBranch(branchName) {
+        throw new Error('Method not implemented');
     }
 
-    async commit(message, files = []) {
-        throw new Error('Method must be implemented');
+    async checkoutBranch(branchName) {
+        throw new Error('Method not implemented');
     }
 
-    async squashCommits(fromRef, toRef, message) {
-        throw new Error('Method must be implemented');
+    async addFiles(files) {
+        throw new Error('Method not implemented');
     }
 
-    async fixupCommits(commits) {
-        throw new Error('Method must be implemented');
+    async commit(message) {
+        throw new Error('Method not implemented');
     }
 
-    async getLastSuccessCommit() {
-        throw new Error('Method must be implemented');
+    async getStatus() {
+        throw new Error('Method not implemented');
     }
 
-    async isWorkingTreeClean() {
-        throw new Error('Method must be implemented');
-    }
-
-    async stageFiles(files) {
-        throw new Error('Method must be implemented');
+    async hasChanges() {
+        throw new Error('Method not implemented');
     }
 }
 
