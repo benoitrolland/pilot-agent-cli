@@ -4,7 +4,7 @@
   "description": "GitHub Copilot automation tool with configuration-driven file management",
   "main": "copilot-client.js",
   "bin": {
-    "pilot-agent-cli": "./bin/pilot-agent-cli.js"
+    "pilot-agent-cli": "bin/pilot-agent-cli.js"
   },
   "scripts": {
     "test": "jest",
@@ -62,6 +62,27 @@
     "hexagonal-architecture",
     "clean-code"
   ],
-  "author": "Your Name",
-  "license": "MIT"
+  "author": "Benoit ROLLAND",
+  "license": "Apache 2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benoitrolland/pilot-agent-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/benoitrolland/pilot-agent-cli/issues"
+  },
+  "homepage": "https://github.com/benoitrolland/pilot-agent-cli#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "copilot-*.js",
+    "pilot-agent-cli.js",
+    "pilot-agent.config.json",
+    "usage*.adoc",
+    "info/",
+    "license.txt"
+  ]
 }
