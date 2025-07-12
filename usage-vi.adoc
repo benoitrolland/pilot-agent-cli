@@ -1,0 +1,98 @@
+= Hướng dẫn Sử dụng
+:toc:
+:lang: vi
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | link:usage-de.adoc[Deutsch] | link:usage-es.adoc[Español] | link:usage-zh.adoc[中文] | link:usage-hi.adoc[हिन्दी] | link:usage-ru.adoc[Русский] | link:usage-ar.adoc[العربية] | link:usage-ja.adoc[日本語] | link:usage-bn.adoc[বাংলা] | link:usage-pt.adoc[Português] | link:usage-yue.adoc[粵語] | *Tiếng Việt* | link:usage-tr.adoc[Türkçe] | link:usage-it.adoc[Italiano] | link:usage-fa.adoc[فارسی] | link:usage-mr.adoc[मराठी] | link:usage-wuu.adoc[吳語] | link:usage-ta.adoc[தமிழ்]
+
+== Cài đặt
+
+[source,shell]
+----
+npm install
+----
+
+== Bắt đầu Nhanh
+
+=== 1. Kiểm tra CLI
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. Khởi tạo cấu hình
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. Chạy kiểm thử
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. Xem cấu hình
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. Chạy agent (sau khi cấu hình)
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== Sử dụng Nâng cao
+
+=== Thiết lập Xác thực
+Trước khi sử dụng agent, thiết lập xác thực GitHub Copilot:
+
+[source,shell]
+----
+# Terminal 1: Khởi động máy chủ xác thực
+node copilot-auth.js
+
+# Terminal 2: Sử dụng client
+node copilot-client.js demo
+----
+
+=== Cấu hình Tùy chỉnh
+[source,shell]
+----
+# Chạy với file cấu hình tùy chỉnh
+node pilot-agent-cli.js run --config ./cau-hinh-cua-toi.json --verbose
+
+# Xem cấu hình hiện tại
+node pilot-agent-cli.js config
+----
+
+== Lệnh Có sẵn
+
+=== Lệnh CLI
+- `init` - Tạo file cấu hình mặc định
+- `run` - Thực thi Pilot Agent với cấu hình hiện tại
+- `config` - Hiển thị cấu hình hiện tại
+- `test` - Chạy kiểm thử cơ bản và xác thực
+- `help` - Hiển thị thông báo trợ giúp
+
+=== Tùy chọn
+- `--config <đường dẫn>` - Chỉ định đường dẫn file cấu hình
+- `--verbose` - Bật ghi log chi tiết
+
+== Khắc phục Sự cố
+
+=== Phụ thuộc
+Đảm bảo GitHub Copilot Language Server đã được cài đặt:
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== Xác thực
+Xác minh xác thực GitHub:
+[source,shell]
+----
+gh auth status
+----

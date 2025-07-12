@@ -1,0 +1,98 @@
+= Guida all'Uso
+:toc:
+:lang: it
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | link:usage-de.adoc[Deutsch] | link:usage-es.adoc[Español] | link:usage-zh.adoc[中文] | link:usage-hi.adoc[हिन्दी] | link:usage-ru.adoc[Русский] | link:usage-ar.adoc[العربية] | link:usage-ja.adoc[日本語] | link:usage-bn.adoc[বাংলা] | link:usage-pt.adoc[Português] | link:usage-yue.adoc[粵語] | link:usage-vi.adoc[Tiếng Việt] | link:usage-tr.adoc[Türkçe] | *Italiano* | link:usage-fa.adoc[فارسی] | link:usage-mr.adoc[मराठी] | link:usage-wuu.adoc[吳語] | link:usage-ta.adoc[தமிழ்]
+
+== Installazione
+
+[source,shell]
+----
+npm install
+----
+
+== Avvio Rapido
+
+=== 1. Testare la CLI
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. Inizializzare la configurazione
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. Eseguire i test
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. Visualizzare la configurazione
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. Eseguire l'agente (dopo la configurazione)
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== Uso Avanzato
+
+=== Configurazione Autenticazione
+Prima di usare l'agente, configurare l'autenticazione GitHub Copilot:
+
+[source,shell]
+----
+# Terminal 1: Avviare il server di autenticazione
+node copilot-auth.js
+
+# Terminal 2: Usare il client
+node copilot-client.js demo
+----
+
+=== Configurazione Personalizzata
+[source,shell]
+----
+# Eseguire con file di configurazione personalizzato
+node pilot-agent-cli.js run --config ./mia-config.json --verbose
+
+# Visualizzare la configurazione corrente
+node pilot-agent-cli.js config
+----
+
+== Comandi Disponibili
+
+=== Comandi CLI
+- `init` - Creare file di configurazione predefinito
+- `run` - Eseguire Pilot Agent con configurazione corrente
+- `config` - Mostrare configurazione corrente
+- `test` - Eseguire test di base e validazioni
+- `help` - Mostrare messaggio di aiuto
+
+=== Opzioni
+- `--config <percorso>` - Specificare percorso file di configurazione
+- `--verbose` - Abilitare logging dettagliato
+
+== Risoluzione Problemi
+
+=== Dipendenze
+Assicurarsi che GitHub Copilot Language Server sia installato:
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== Autenticazione
+Verificare l'autenticazione GitHub:
+[source,shell]
+----
+gh auth status
+----

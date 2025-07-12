@@ -1,0 +1,98 @@
+= Kullanım Kılavuzu
+:toc:
+:lang: tr
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | link:usage-de.adoc[Deutsch] | link:usage-es.adoc[Español] | link:usage-zh.adoc[中文] | link:usage-hi.adoc[हिन्दी] | link:usage-ru.adoc[Русский] | link:usage-ar.adoc[العربية] | link:usage-ja.adoc[日本語] | link:usage-bn.adoc[বাংলা] | link:usage-pt.adoc[Português] | link:usage-yue.adoc[粵語] | link:usage-vi.adoc[Tiếng Việt] | *Türkçe* | link:usage-it.adoc[Italiano] | link:usage-fa.adoc[فارسی] | link:usage-mr.adoc[मराठी] | link:usage-wuu.adoc[吳語] | link:usage-ta.adoc[தமிழ்]
+
+== Kurulum
+
+[source,shell]
+----
+npm install
+----
+
+== Hızlı Başlangıç
+
+=== 1. CLI'yı Test Edin
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. Yapılandırmayı Başlatın
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. Testleri Çalıştırın
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. Yapılandırmayı Görüntüleyin
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. Ajanı Çalıştırın (yapılandırdıktan sonra)
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== Gelişmiş Kullanım
+
+=== Kimlik Doğrulama Kurulumu
+Ajanı kullanmadan önce, GitHub Copilot kimlik doğrulamasını ayarlayın:
+
+[source,shell]
+----
+# Terminal 1: Kimlik doğrulama sunucusunu başlatın
+node copilot-auth.js
+
+# Terminal 2: İstemciyi kullanın
+node copilot-client.js demo
+----
+
+=== Özel Yapılandırma
+[source,shell]
+----
+# Özel yapılandırma dosyasıyla çalıştırın
+node pilot-agent-cli.js run --config ./benim-config.json --verbose
+
+# Mevcut yapılandırmayı görüntüleyin
+node pilot-agent-cli.js config
+----
+
+== Mevcut Komutlar
+
+=== CLI Komutları
+- `init` - Varsayılan yapılandırma dosyası oluştur
+- `run` - Mevcut yapılandırmayla Pilot Agent'ı çalıştır
+- `config` - Mevcut yapılandırmayı göster
+- `test` - Temel testleri ve doğrulamaları çalıştır
+- `help` - Yardım mesajını göster
+
+=== Seçenekler
+- `--config <yol>` - Yapılandırma dosyası yolunu belirtin
+- `--verbose` - Ayrıntılı günlüklemeyi etkinleştirin
+
+== Sorun Giderme
+
+=== Bağımlılıklar
+GitHub Copilot Language Server'ın kurulu olduğundan emin olun:
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== Kimlik Doğrulama
+GitHub kimlik doğrulamasını doğrulayın:
+[source,shell]
+----
+gh auth status
+----

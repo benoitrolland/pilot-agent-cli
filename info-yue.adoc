@@ -1,0 +1,56 @@
+= GitHub Copilot 客戶端 - 項目信息
+:toc:
+:lang: yue
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語] | link:info-bn.adoc[বাংলা] | link:info-pt.adoc[Português] | *粵語* | link:info-vi.adoc[Tiếng Việt] | link:info-tr.adoc[Türkçe] | link:info-it.adoc[Italiano] | link:info-fa.adoc[فارسی] | link:info-mr.adoc[मराठी] | link:info-wuu.adoc[吳語] | link:info-ta.adoc[தமிழ்]
+
+== 檔案概覽
+
+=== 認證同客戶端層
+
+- **copilot-auth.js**:
+  . 啟動 copilot-language-server
+  . 管理認證對話框
+  . 檢查同顯示認證狀態
+  . 為用戶認證提供互動式CLI
+
+- **copilot-client.js**:
+  Copilot Language Server 嘅技術適配器。處理認證、同 Copilot 通信同依賴驗證。
+
+- **pilot-agent-cli.js**:
+  主要CLI介面，編排項目自動化：配置管理、代理執行、Git交互。
+
+=== 架構摘要
+
+[source]
+----
+copilot-auth.js      → 認證管理
+copilot-client.js    → 技術 Copilot 適配器（基礎設施）
+pilot-agent-cli.js   → CLI 入口點，業務編排
+----
+
+== 項目架構
+
+=== 六角形架構實現
+
+[source]
+----
+領域（業務核心）
+├── entities/           # 業務實體 (ProjectConfig)
+├── ports/             # 介面契約 (FileSystem, GitRepository)
+└── services/          # 業務編排 (CopilotAgentService)
+
+基礎設施（適配器）
+├── adapters/          # 具體實現
+├── config/           # 配置管理
+└── process/          # 進程管理
+----
+
+=== 應用嘅SOLID原則
+
+- **S**ingle Responsibility: 每個類有一個職責
+- **O**pen/Closed: 通過介面（端口）可擴展
+- **L**iskov Substitution: 適配器尊重其契約
+- **I**nterface Segregation: 專業化、有針對性嘅介面
+- **D**ependency Inversion: 領域僅依賴抽象

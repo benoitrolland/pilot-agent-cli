@@ -1,0 +1,98 @@
+= பயன்பாட்டு வழிகாட்டி
+:toc:
+:lang: ta
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | link:usage-de.adoc[Deutsch] | link:usage-es.adoc[Español] | link:usage-zh.adoc[中文] | link:usage-hi.adoc[हिन्दी] | link:usage-ru.adoc[Русский] | link:usage-ar.adoc[العربية] | link:usage-ja.adoc[日本語] | link:usage-bn.adoc[বাংলা] | link:usage-pt.adoc[Português] | link:usage-yue.adoc[粵語] | link:usage-vi.adoc[Tiếng Việt] | link:usage-tr.adoc[Türkçe] | link:usage-it.adoc[Italiano] | link:usage-fa.adoc[فارسی] | link:usage-mr.adoc[मराठी] | link:usage-wuu.adoc[吳語] | *தமிழ்*
+
+== நிறுவல்
+
+[source,shell]
+----
+npm install
+----
+
+== விரைவு தொடக்கம்
+
+=== 1. CLI ஐ சோதிக்கவும்
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. கட்டமைப்பை துவக்கவும்
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. சோதனைகளை இயக்கவும்
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. கட்டமைப்பைப் பார்க்கவும்
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. முகவரை இயக்கவும் (கட்டமைத்த பின்)
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== மேம்பட்ட பயன்பாடு
+
+=== அங்கீகார அமைப்பு
+முகவரைப் பயன்படுத்துவதற்கு முன், GitHub Copilot அங்கீகாரத்தை அமைக்கவும்:
+
+[source,shell]
+----
+# டெர்மினல் 1: அங்கீகார சேவையகத்தைத் தொடங்கவும்
+node copilot-auth.js
+
+# டெர்மினல் 2: கிளையன்ட்டைப் பயன்படுத்தவும்
+node copilot-client.js demo
+----
+
+=== தனிப்பயன் கட்டமைப்பு
+[source,shell]
+----
+# தனிப்பயன் கட்டமைப்பு கோப்புடன் இயக்கவும்
+node pilot-agent-cli.js run --config ./என்-கட்டமைப்பு.json --verbose
+
+# தற்போதைய கட்டமைப்பைப் பார்க்கவும்
+node pilot-agent-cli.js config
+----
+
+== கிடைக்கும் கட்டளைகள்
+
+=== CLI கட்டளைகள்
+- `init` - இயல்புநிலை கட்டமைப்பு கோப்பை உருவாக்கவும்
+- `run` - தற்போதைய கட்டமைப்புடன் Pilot Agent ஐ இயக்கவும்
+- `config` - தற்போதைய கட்டமைப்பைக் காட்டவும்
+- `test` - அடிப்படை சோதனைகள் மற்றும் சரிபார்ப்புகளை இயக்கவும்
+- `help` - உதவி செய்தியைக் காட்டவும்
+
+=== விருப்பங்கள்
+- `--config <பாதை>` - கட்டமைப்பு கோப்பு பாதையைக் குறிப்பிடவும்
+- `--verbose` - விரிவான பதிவை இயக்கவும்
+
+== சிக்கல் निवारण
+
+=== சார்புகள்
+GitHub Copilot Language Server நிறுவப்பட்டிருப்பதை உறுதிப்படுத்தவும்:
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== அங்கீகாரம்
+GitHub அங்கீகாரத்தை சரிபார்க்கவும்:
+[source,shell]
+----
+gh auth status
+----

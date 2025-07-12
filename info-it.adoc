@@ -1,0 +1,56 @@
+= Client GitHub Copilot - Informazioni del Progetto
+:toc:
+:lang: it
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語] | link:info-bn.adoc[বাংলা] | link:info-pt.adoc[Português] | link:info-yue.adoc[粵語] | link:info-vi.adoc[Tiếng Việt] | link:info-tr.adoc[Türkçe] | *Italiano* | link:info-fa.adoc[فارسی] | link:info-mr.adoc[मराठी] | link:info-wuu.adoc[吳語] | link:info-ta.adoc[தமிழ்]
+
+== Panoramica dei File
+
+=== Livello di Autenticazione e Client
+
+- **copilot-auth.js**:
+  . Avvia il copilot-language-server
+  . Gestisce il dialogo di autenticazione
+  . Controlla e visualizza lo stato di autenticazione
+  . Fornisce CLI interattiva per l'autenticazione utente
+
+- **copilot-client.js**:
+  Adattatore tecnico per Copilot Language Server. Gestisce autenticazione, comunicazione con Copilot e verifica delle dipendenze.
+
+- **pilot-agent-cli.js**:
+  Interfaccia CLI principale che orchestra l'automazione del progetto: gestione configurazione, esecuzione agent, interazione Git.
+
+=== Riassunto dell'Architettura
+
+[source]
+----
+copilot-auth.js      → Gestione autenticazione
+copilot-client.js    → Adattatore tecnico Copilot (infrastruttura)
+pilot-agent-cli.js   → Punto di ingresso CLI, orchestrazione business
+----
+
+== Architettura del Progetto
+
+=== Implementazione Architettura Esagonale
+
+[source]
+----
+Dominio (Nucleo Business)
+├── entities/           # Entità business (ProjectConfig)
+├── ports/             # Contratti interfaccia (FileSystem, GitRepository)
+└── services/          # Orchestrazione business (CopilotAgentService)
+
+Infrastruttura (Adattatori)
+├── adapters/          # Implementazioni concrete
+├── config/           # Gestione configurazione
+└── process/          # Gestione processi
+----
+
+=== Principi SOLID Applicati
+
+- **S**ingle Responsibility: Ogni classe ha una responsabilità
+- **O**pen/Closed: Estendibile tramite interfacce (porte)
+- **L**iskov Substitution: Gli adattatori rispettano i loro contratti
+- **I**nterface Segregation: Interfacce specializzate e mirate
+- **D**ependency Inversion: Il dominio dipende solo da astrazioni

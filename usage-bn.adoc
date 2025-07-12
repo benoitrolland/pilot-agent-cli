@@ -1,0 +1,98 @@
+= ব্যবহারের গাইড
+:toc:
+:lang: bn
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | link:usage-de.adoc[Deutsch] | link:usage-es.adoc[Español] | link:usage-zh.adoc[中文] | link:usage-hi.adoc[हिन्दी] | link:usage-ru.adoc[Русский] | link:usage-ar.adoc[العربية] | link:usage-ja.adoc[日本語] | *বাংলা* | link:usage-pt.adoc[Português] | link:usage-yue.adoc[粵語] | link:usage-vi.adoc[Tiếng Việt] | link:usage-tr.adoc[Türkçe] | link:usage-it.adoc[Italiano] | link:usage-fa.adoc[فارسی] | link:usage-mr.adoc[मराठी] | link:usage-wuu.adoc[吳語] | link:usage-ta.adoc[தமிழ்]
+
+== ইনস্টলেশন
+
+[source,shell]
+----
+npm install
+----
+
+== দ্রুত শুরু
+
+=== 1. CLI পরীক্ষা করুন
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. কনফিগারেশন শুরু করুন
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. পরীক্ষা চালান
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. কনফিগারেশন দেখুন
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. এজেন্ট চালান (কনফিগারেশনের পর)
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== উন্নত ব্যবহার
+
+=== প্রমাণীকরণ সেটআপ
+এজেন্ট ব্যবহার করার আগে, GitHub Copilot প্রমাণীকরণ সেট করুন:
+
+[source,shell]
+----
+# টার্মিনাল 1: প্রমাণীকরণ সার্ভার শুরু করুন
+node copilot-auth.js
+
+# টার্মিনাল 2: ক্লায়েন্ট ব্যবহার করুন
+node copilot-client.js demo
+----
+
+=== কাস্টম কনফিগারেশন
+[source,shell]
+----
+# কাস্টম কনফিগ ফাইল দিয়ে চালান
+node pilot-agent-cli.js run --config ./আমার-কনফিগ.json --verbose
+
+# বর্তমান কনফিগারেশন দেখুন
+node pilot-agent-cli.js config
+----
+
+== উপলব্ধ কমান্ড
+
+=== CLI কমান্ড
+- `init` - ডিফল্ট কনফিগারেশন ফাইল তৈরি করুন
+- `run` - বর্তমান কনফিগ দিয়ে Pilot Agent চালান
+- `config` - বর্তমান কনফিগারেশন দেখান
+- `test` - মৌলিক পরীক্ষা এবং যাচাইকরণ চালান
+- `help` - সহায়তা বার্তা দেখান
+
+=== অপশন
+- `--config <পথ>` - কনফিগ ফাইলের পথ নির্দিষ্ট করুন
+- `--verbose` - বিস্তারিত লগিং সক্রিয় করুন
+
+== সমস্যা সমাধান
+
+=== নির্ভরতা
+GitHub Copilot Language Server ইনস্টল করা আছে তা নিশ্চিত করুন:
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== প্রমাণীকরণ
+GitHub প্রমাণীকরণ যাচাই করুন:
+[source,shell]
+----
+gh auth status
+----

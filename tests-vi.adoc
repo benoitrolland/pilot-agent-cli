@@ -1,0 +1,63 @@
+= Hướng dẫn Kiểm thử
+:toc:
+:lang: vi
+
+[.lead]
+link:tests.adoc[English] | link:tests-fr.adoc[Français] | link:tests-de.adoc[Deutsch] | link:tests-es.adoc[Español] | link:tests-zh.adoc[中文] | link:tests-hi.adoc[हिन्दी] | link:tests-ru.adoc[Русский] | link:tests-ar.adoc[العربية] | link:tests-ja.adoc[日本語] | link:tests-bn.adoc[বাংলা] | link:tests-pt.adoc[Português] | link:tests-yue.adoc[粵語] | *Tiếng Việt* | link:tests-tr.adoc[Türkçe] | link:tests-it.adoc[Italiano] | link:tests-fa.adoc[فارسی] | link:tests-mr.adoc[मराठी] | link:tests-wuu.adoc[吳語] | link:tests-ta.adoc[தமிழ்]
+
+== Chạy Kiểm thử
+
+Để thực thi kiểm thử trong dự án này, sử dụng lệnh sau trong terminal:
+
+[source,shell]
+----
+npm test
+----
+
+Lệnh này chạy bộ kiểm thử Jest hoàn chỉnh với độ bao phủ TDD.
+
+=== Lệnh kiểm thử thay thế
+
+[source,shell]
+----
+# Chạy kiểm thử với độ bao phủ
+npm run test:coverage
+
+# Chạy kiểm thử ở chế độ theo dõi
+npm run test:watch
+
+# Chạy kiểm thử CLI tích hợp
+node pilot-agent-cli.js test
+----
+
+== Kiến trúc Kiểm thử
+
+Các kiểm thử của chúng tôi tuân theo kiến trúc lục giác:
+
+[source]
+----
+tests/
+├── domain/              # Kiểm thử logic kinh doanh
+│   ├── entities/        # Kiểm thử thực thể
+│   └── services/        # Kiểm thử dịch vụ
+└── infrastructure/      # Kiểm thử bộ điều hợp
+    └── adapters/        # Kiểm thử bộ điều hợp cơ sở hạ tầng
+----
+
+== Yêu cầu
+
+Đảm bảo bạn đang ở thư mục gốc dự án và tất cả phụ thuộc đã được cài đặt với `npm install`.
+
+== Nguyên tắc TDD Áp dụng
+
+. **Đỏ**: Viết một kiểm thử thất bại
+. **Xanh**: Viết mã tối thiểu để làm cho nó pass
+. **Tái cấu trúc**: Cải thiện mã trong khi giữ kiểm thử xanh
+
+== Độ bao phủ Kiểm thử
+
+Độ bao phủ hiện tại: **38 kiểm thử đạt** với ngưỡng tối thiểu 80% cho:
+- Nhánh
+- Hàm
+- Dòng
+- Câu lệnh

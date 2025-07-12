@@ -1,0 +1,98 @@
+= راهنمای استفاده
+:toc:
+:lang: fa
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | link:usage-de.adoc[Deutsch] | link:usage-es.adoc[Español] | link:usage-zh.adoc[中文] | link:usage-hi.adoc[हिन्दी] | link:usage-ru.adoc[Русский] | link:usage-ar.adoc[العربية] | link:usage-ja.adoc[日本語] | link:usage-bn.adoc[বাংলা] | link:usage-pt.adoc[Português] | link:usage-yue.adoc[粵語] | link:usage-vi.adoc[Tiếng Việt] | link:usage-tr.adoc[Türkçe] | link:usage-it.adoc[Italiano] | *فارسی* | link:usage-mr.adoc[मराठी] | link:usage-wuu.adoc[吳語] | link:usage-ta.adoc[தமிழ்]
+
+== نصب
+
+[source,shell]
+----
+npm install
+----
+
+== شروع سریع
+
+=== 1. تست CLI
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. مقداردهی اولیه پیکربندی
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. اجرای تست‌ها
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. مشاهده پیکربندی
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. اجرای عامل (پس از پیکربندی)
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== استفاده پیشرفته
+
+=== تنظیمات احراز هویت
+قبل از استفاده از عامل، احراز هویت GitHub Copilot را تنظیم کنید:
+
+[source,shell]
+----
+# ترمینال 1: راه‌اندازی سرور احراز هویت
+node copilot-auth.js
+
+# ترمینال 2: استفاده از کلاینت
+node copilot-client.js demo
+----
+
+=== پیکربندی سفارشی
+[source,shell]
+----
+# اجرا با فایل پیکربندی سفارشی
+node pilot-agent-cli.js run --config ./پیکربندی-من.json --verbose
+
+# مشاهده پیکربندی فعلی
+node pilot-agent-cli.js config
+----
+
+== دستورات موجود
+
+=== دستورات CLI
+- `init` - ایجاد فایل پیکربندی پیش‌فرض
+- `run` - اجرای Pilot Agent با پیکربندی فعلی
+- `config` - نمایش پیکربندی فعلی
+- `test` - اجرای تست‌های پایه و اعتبارسنجی
+- `help` - نمایش پیام راهنما
+
+=== گزینه‌ها
+- `--config <مسیر>` - تعیین مسیر فایل پیکربندی
+- `--verbose` - فعال‌سازی گزارش‌گیری مفصل
+
+== عیب‌یابی
+
+=== وابستگی‌ها
+اطمینان حاصل کنید که GitHub Copilot Language Server نصب است:
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== احراز هویت
+تأیید احراز هویت GitHub:
+[source,shell]
+----
+gh auth status
+----

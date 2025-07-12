@@ -1,0 +1,98 @@
+= 使用指南
+:toc:
+:lang: wuu
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | link:usage-de.adoc[Deutsch] | link:usage-es.adoc[Español] | link:usage-zh.adoc[中文] | link:usage-hi.adoc[हिन्दी] | link:usage-ru.adoc[Русский] | link:usage-ar.adoc[العربية] | link:usage-ja.adoc[日本語] | link:usage-bn.adoc[বাংলা] | link:usage-pt.adoc[Português] | link:usage-yue.adoc[粵語] | link:usage-vi.adoc[Tiếng Việt] | link:usage-tr.adoc[Türkçe] | link:usage-it.adoc[Italiano] | link:usage-fa.adoc[فارسی] | link:usage-mr.adoc[मराठी] | *吳語* | link:usage-ta.adoc[தமிழ்]
+
+== 安裝
+
+[source,shell]
+----
+npm install
+----
+
+== 快速開始
+
+=== 1. 測試 CLI
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. 初始化配置
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. 運行測試
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. 查看配置
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. 運行代理（配置後）
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== 高級用法
+
+=== 認證設置
+使用代理前，設置 GitHub Copilot 認證：
+
+[source,shell]
+----
+# 終端 1：啟動認證服務器
+node copilot-auth.js
+
+# 終端 2：使用客戶端
+node copilot-client.js demo
+----
+
+=== 自定義配置
+[source,shell]
+----
+# 使用自定義配置文件運行
+node pilot-agent-cli.js run --config ./我個配置.json --verbose
+
+# 查看當前配置
+node pilot-agent-cli.js config
+----
+
+== 可用命令
+
+=== CLI 命令
+- `init` - 創建默認配置文件
+- `run` - 使用當前配置執行 Pilot Agent
+- `config` - 顯示當前配置
+- `test` - 運行基本測試搭驗證
+- `help` - 顯示幫助信息
+
+=== 選項
+- `--config <路徑>` - 指定配置文件路徑
+- `--verbose` - 啟用詳細日誌記錄
+
+== 故障排除
+
+=== 依賴項
+確保安裝仔 GitHub Copilot Language Server：
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== 認證
+驗證 GitHub 認證：
+[source,shell]
+----
+gh auth status
+----

@@ -1,0 +1,56 @@
+= GitHub Copilot İstemcisi - Proje Bilgileri
+:toc:
+:lang: tr
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語] | link:info-bn.adoc[বাংলা] | link:info-pt.adoc[Português] | link:info-yue.adoc[粵語] | link:info-vi.adoc[Tiếng Việt] | *Türkçe* | link:info-it.adoc[Italiano] | link:info-fa.adoc[فارسی] | link:info-mr.adoc[मराठी] | link:info-wuu.adoc[吳語] | link:info-ta.adoc[தமிழ்]
+
+== Dosya Genel Bakışı
+
+=== Kimlik Doğrulama ve İstemci Katmanı
+
+- **copilot-auth.js**:
+  . copilot-language-server'ı başlatır
+  . Kimlik doğrulama iletişim kutusunu yönetir
+  . Kimlik doğrulama durumunu kontrol eder ve görüntüler
+  . Kullanıcı kimlik doğrulaması için etkileşimli CLI sağlar
+
+- **copilot-client.js**:
+  Copilot Language Server için teknik adaptör. Kimlik doğrulama, Copilot ile iletişim ve bağımlılık doğrulamasını yönetir.
+
+- **pilot-agent-cli.js**:
+  Proje otomasyonunu düzenleyen ana CLI arayüzü: yapılandırma yönetimi, agent yürütme, Git etkileşimi.
+
+=== Mimari Özeti
+
+[source]
+----
+copilot-auth.js      → Kimlik doğrulama yönetimi
+copilot-client.js    → Teknik Copilot adaptörü (altyapı)
+pilot-agent-cli.js   → CLI giriş noktası, iş orkestasyonu
+----
+
+== Proje Mimarisi
+
+=== Altıgen Mimari Uygulaması
+
+[source]
+----
+Alan (İş Çekirdeği)
+├── entities/           # İş varlıkları (ProjectConfig)
+├── ports/             # Arayüz sözleşmeleri (FileSystem, GitRepository)
+└── services/          # İş orkestrasyonu (CopilotAgentService)
+
+Altyapı (Adaptörler)
+├── adapters/          # Somut uygulamalar
+├── config/           # Yapılandırma yönetimi
+└── process/          # Süreç yönetimi
+----
+
+=== Uygulanan SOLID İlkeleri
+
+- **S**ingle Responsibility: Her sınıfın tek sorumluluğu var
+- **O**pen/Closed: Arayüzler (portlar) aracılığıyla genişletilebilir
+- **L**iskov Substitution: Adaptörler sözleşmelerine saygı gösterir
+- **I**nterface Segregation: Özelleşmiş, hedefli arayüzler
+- **D**ependency Inversion: Alan sadece soyutlamalara bağlıdır

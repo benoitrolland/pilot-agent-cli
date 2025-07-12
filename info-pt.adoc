@@ -1,0 +1,56 @@
+= Cliente GitHub Copilot - Informações do Projeto
+:toc:
+:lang: pt
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語] | link:info-bn.adoc[বাংলা] | *Português* | link:info-yue.adoc[粵語] | link:info-vi.adoc[Tiếng Việt] | link:info-tr.adoc[Türkçe] | link:info-it.adoc[Italiano] | link:info-fa.adoc[فارسی] | link:info-mr.adoc[मराठी] | link:info-wuu.adoc[吳語] | link:info-ta.adoc[தமிழ்]
+
+== Visão Geral dos Arquivos
+
+=== Camada de Autenticação e Cliente
+
+- **copilot-auth.js**:
+  . Inicia o copilot-language-server
+  . Gerencia o diálogo de autenticação
+  . Verifica e exibe o status de autenticação
+  . Fornece CLI interativo para autenticação do usuário
+
+- **copilot-client.js**:
+  Adaptador técnico para Copilot Language Server. Gerencia autenticação, comunicação com Copilot e verificação de dependências.
+
+- **pilot-agent-cli.js**:
+  Interface CLI principal orquestrando automação de projetos: gestão de configuração, execução de agente, interação Git.
+
+=== Resumo da Arquitetura
+
+[source]
+----
+copilot-auth.js      → Gestão de autenticação
+copilot-client.js    → Adaptador técnico Copilot (infraestrutura)
+pilot-agent-cli.js   → Ponto de entrada CLI, orquestração de negócios
+----
+
+== Arquitetura do Projeto
+
+=== Implementação da Arquitetura Hexagonal
+
+[source]
+----
+Domínio (Núcleo de Negócios)
+├── entities/           # Entidades de negócio (ProjectConfig)
+├── ports/             # Contratos de interface (FileSystem, GitRepository)
+└── services/          # Orquestração de negócios (CopilotAgentService)
+
+Infraestrutura (Adaptadores)
+├── adapters/          # Implementações concretas
+├── config/           # Gestão de configuração
+└── process/          # Gestão de processos
+----
+
+=== Princípios SOLID Aplicados
+
+- **S**ingle Responsibility: Cada classe tem uma responsabilidade
+- **O**pen/Closed: Extensível via interfaces (portas)
+- **L**iskov Substitution: Adaptadores respeitam seus contratos
+- **I**nterface Segregation: Interfaces especializadas e direcionadas
+- **D**ependency Inversion: Domínio depende apenas de abstrações

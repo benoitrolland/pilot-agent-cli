@@ -1,0 +1,56 @@
+= GitHub Copilot Client - Thông tin Dự án
+:toc:
+:lang: vi
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語] | link:info-bn.adoc[বাংলা] | link:info-pt.adoc[Português] | link:info-yue.adoc[粵語] | *Tiếng Việt* | link:info-tr.adoc[Türkçe] | link:info-it.adoc[Italiano] | link:info-fa.adoc[فارسی] | link:info-mr.adoc[मराठी] | link:info-wuu.adoc[吳語] | link:info-ta.adoc[தமிழ்]
+
+== Tổng quan về Tệp tin
+
+=== Lớp Xác thực và Client
+
+- **copilot-auth.js**:
+  . Khởi động copilot-language-server
+  . Quản lý hộp thoại xác thực
+  . Kiểm tra và hiển thị trạng thái xác thực
+  . Cung cấp CLI tương tác cho xác thực người dùng
+
+- **copilot-client.js**:
+  Bộ điều hợp kỹ thuật cho Copilot Language Server. Xử lý xác thực, giao tiếp với Copilot và xác minh phụ thuộc.
+
+- **pilot-agent-cli.js**:
+  Giao diện CLI chính điều phối tự động hóa dự án: quản lý cấu hình, thực thi agent, tương tác Git.
+
+=== Tóm tắt Kiến trúc
+
+[source]
+----
+copilot-auth.js      → Quản lý xác thực
+copilot-client.js    → Bộ điều hợp kỹ thuật Copilot (cơ sở hạ tầng)
+pilot-agent-cli.js   → Điểm vào CLI, điều phối kinh doanh
+----
+
+== Kiến trúc Dự án
+
+=== Triển khai Kiến trúc Lục giác
+
+[source]
+----
+Miền (Lõi Kinh doanh)
+├── entities/           # Thực thể kinh doanh (ProjectConfig)
+├── ports/             # Hợp đồng giao diện (FileSystem, GitRepository)
+└── services/          # Điều phối kinh doanh (CopilotAgentService)
+
+Cơ sở hạ tầng (Bộ điều hợp)
+├── adapters/          # Triển khai cụ thể
+├── config/           # Quản lý cấu hình
+└── process/          # Quản lý tiến trình
+----
+
+=== Nguyên tắc SOLID được Áp dụng
+
+- **S**ingle Responsibility: Mỗi lớp có một trách nhiệm
+- **O**pen/Closed: Có thể mở rộng qua giao diện (cổng)
+- **L**iskov Substitution: Bộ điều hợp tôn trọng hợp đồng của chúng
+- **I**nterface Segregation: Giao diện chuyên biệt, có mục tiêu
+- **D**ependency Inversion: Miền chỉ phụ thuộc vào trừu tượng

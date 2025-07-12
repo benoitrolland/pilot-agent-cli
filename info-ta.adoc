@@ -1,0 +1,56 @@
+= GitHub Copilot கிளையன்ட் - திட்ட தகவல்
+:toc:
+:lang: ta
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語] | link:info-bn.adoc[বাংলা] | link:info-pt.adoc[Português] | link:info-yue.adoc[粵語] | link:info-vi.adoc[Tiếng Việt] | link:info-tr.adoc[Türkçe] | link:info-it.adoc[Italiano] | link:info-fa.adoc[فارسی] | link:info-mr.adoc[मराठी] | link:info-wuu.adoc[吳語] | *தமிழ்*
+
+== கோப்பு மேலோட்டம்
+
+=== அங்கீகாரம் மற்றும் கிளையன்ட் அடுக்கு
+
+- **copilot-auth.js**:
+  . copilot-language-server ஐ தொடங்குகிறது
+  . அங்கீகார உரையாடலை நிர்வகிக்கிறது
+  . அங்கீகார நிலையை சரிபார்த்து காட்டுகிறது
+  . பயனர் அங்கீகாரத்திற்கு ஊடாடும் CLI வழங்குகிறது
+
+- **copilot-client.js**:
+  Copilot Language Server க்கான தொழில்நுட்ப அடாப்டர். அங்கீகாரம், Copilot உடன் தொடர்பு மற்றும் சார்பு சரிபார்ப்பை கையாளுகிறது.
+
+- **pilot-agent-cli.js**:
+  திட்ட தன்னியக்கத்தை ஒழுங்குபடுத்தும் முக்கிய CLI இடைமுகம்: கட்டமைப்பு நிர்வாகம், முகவர் செயல்படுத்தல், Git தொடர்பு.
+
+=== கட்டிடக்கலை சுருக்கம்
+
+[source]
+----
+copilot-auth.js      → அங்கீகார நிர்வாகம்
+copilot-client.js    → தொழில்நுட்ப Copilot அடாப்டர் (உள்கட்டமைப்பு)
+pilot-agent-cli.js   → CLI நுழைவு புள்ளி, வணிக ஒருங்கிணைப்பு
+----
+
+== திட்ட கட்டிடக்கலை
+
+=== அறுகோண கட்டிடக்கலை செயல்படுத்தல்
+
+[source]
+----
+களம் (வணிக மையம்)
+├── entities/           # வணிக நிறுவனங்கள் (ProjectConfig)
+├── ports/             # இடைமுக ஒப்பந்தங்கள் (FileSystem, GitRepository)
+└── services/          # வணிக ஒருங்கிணைப்பு (CopilotAgentService)
+
+உள்கட்டமைப்பு (அடாப்டர்கள்)
+├── adapters/          # உறுதியான செயல்படுத்தல்கள்
+├── config/           # கட்டமைப்பு நிர்வாகம்
+└── process/          # செயல்முறை நிர்வாகம்
+----
+
+=== பயன்படுத்தப்பட்ட SOLID கொள்கைகள்
+
+- **S**ingle Responsibility: ஒவ்வொரு வகுப்பிற்கும் ஒரு பொறுப்பு
+- **O**pen/Closed: இடைமுகங்கள் (துறைமுகங்கள்) மூலம் விரிவாக்கக்கூடியது
+- **L**iskov Substitution: அடாப்டர்கள் தங்கள் ஒப்பந்தங்களை மதிக்கின்றன
+- **I**nterface Segregation: சிறப்பு, இலக்கு வைக்கப்பட்ட இடைமுகங்கள்
+- **D**ependency Inversion: களம் சுருக்கங்களை மட்டுமே சார்ந்துள்ளது

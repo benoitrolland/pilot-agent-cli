@@ -1,0 +1,63 @@
+= 測試指南
+:toc:
+:lang: yue
+
+[.lead]
+link:tests.adoc[English] | link:tests-fr.adoc[Français] | link:tests-de.adoc[Deutsch] | link:tests-es.adoc[Español] | link:tests-zh.adoc[中文] | link:tests-hi.adoc[हिन्दी] | link:tests-ru.adoc[Русский] | link:tests-ar.adoc[العربية] | link:tests-ja.adoc[日本語] | link:tests-bn.adoc[বাংলা] | link:tests-pt.adoc[Português] | *粵語* | link:tests-vi.adoc[Tiếng Việt] | link:tests-tr.adoc[Türkçe] | link:tests-it.adoc[Italiano] | link:tests-fa.adoc[فارسی] | link:tests-mr.adoc[मराठी] | link:tests-wuu.adoc[吳語] | link:tests-ta.adoc[தமிழ்]
+
+== 運行測試
+
+要喺呢個項目執行測試，請喺終端使用以下命令：
+
+[source,shell]
+----
+npm test
+----
+
+呢個命令運行完整嘅 Jest 測試套件，包含 TDD 覆蓋率。
+
+=== 其他測試命令
+
+[source,shell]
+----
+# 運行帶覆蓋率嘅測試
+npm run test:coverage
+
+# 喺監視模式下運行測試
+npm run test:watch
+
+# 運行集成 CLI 測試
+node pilot-agent-cli.js test
+----
+
+== 測試架構
+
+我哋嘅測試遵循六角形架構：
+
+[source]
+----
+tests/
+├── domain/              # 業務邏輯測試
+│   ├── entities/        # 實體測試
+│   └── services/        # 服務測試
+└── infrastructure/      # 適配器測試
+    └── adapters/        # 基礎設施適配器測試
+----
+
+== 要求
+
+確保您喺項目根目錄中，並且已使用 `npm install` 安裝所有依賴項。
+
+== 應用嘅 TDD 原則
+
+. **紅色**：編寫一個失敗嘅測試
+. **綠色**：編寫最少嘅代碼令其通過
+. **重構**：喺保持測試綠色嘅同時改進代碼
+
+== 測試覆蓋率
+
+當前覆蓋率：**38 個測試通過**，最低閾值為 80%：
+- 分支
+- 函數
+- 行
+- 語句

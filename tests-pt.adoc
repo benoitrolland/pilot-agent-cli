@@ -1,0 +1,63 @@
+= Guia de Testes
+:toc:
+:lang: pt
+
+[.lead]
+link:tests.adoc[English] | link:tests-fr.adoc[Français] | link:tests-de.adoc[Deutsch] | link:tests-es.adoc[Español] | link:tests-zh.adoc[中文] | link:tests-hi.adoc[हिन्दी] | link:tests-ru.adoc[Русский] | link:tests-ar.adoc[العربية] | link:tests-ja.adoc[日本語] | link:tests-bn.adoc[বাংলা] | *Português* | link:tests-yue.adoc[粵語] | link:tests-vi.adoc[Tiếng Việt] | link:tests-tr.adoc[Türkçe] | link:tests-it.adoc[Italiano] | link:tests-fa.adoc[فارسی] | link:tests-mr.adoc[मराठी] | link:tests-wuu.adoc[吳語] | link:tests-ta.adoc[தமிழ்]
+
+== Executar Testes
+
+Para executar testes neste projeto, use o seguinte comando no terminal:
+
+[source,shell]
+----
+npm test
+----
+
+Este comando executa a suite completa de testes Jest com cobertura TDD.
+
+=== Comandos alternativos de teste
+
+[source,shell]
+----
+# Executar testes com cobertura
+npm run test:coverage
+
+# Executar testes em modo watch
+npm run test:watch
+
+# Executar testes CLI integrados
+node pilot-agent-cli.js test
+----
+
+== Arquitetura de Testes
+
+Nossos testes seguem a arquitetura hexagonal:
+
+[source]
+----
+tests/
+├── domain/              # Testes de lógica de negócio
+│   ├── entities/        # Testes de entidades
+│   └── services/        # Testes de serviços
+└── infrastructure/      # Testes de adaptadores
+    └── adapters/        # Testes de adaptadores de infraestrutura
+----
+
+== Requisitos
+
+Certifique-se de estar no diretório raiz do projeto e que todas as dependências estejam instaladas com `npm install`.
+
+== Princípios TDD Aplicados
+
+. **Vermelho**: Escrever um teste que falha
+. **Verde**: Escrever código mínimo para fazê-lo passar
+. **Refatorar**: Melhorar o código mantendo os testes verdes
+
+== Cobertura de Testes
+
+Cobertura atual: **38 testes passando** com limite mínimo de 80% para:
+- Ramos
+- Funções
+- Linhas
+- Declarações

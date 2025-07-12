@@ -1,0 +1,63 @@
+= পরীক্ষার গাইড
+:toc:
+:lang: bn
+
+[.lead]
+link:tests.adoc[English] | link:tests-fr.adoc[Français] | link:tests-de.adoc[Deutsch] | link:tests-es.adoc[Español] | link:tests-zh.adoc[中文] | link:tests-hi.adoc[हिन्दी] | link:tests-ru.adoc[Русский] | link:tests-ar.adoc[العربية] | link:tests-ja.adoc[日本語] | *বাংলা* | link:tests-pt.adoc[Português] | link:tests-yue.adoc[粵語] | link:tests-vi.adoc[Tiếng Việt] | link:tests-tr.adoc[Türkçe] | link:tests-it.adoc[Italiano] | link:tests-fa.adoc[فارسی] | link:tests-mr.adoc[मराठी] | link:tests-wuu.adoc[吳語] | link:tests-ta.adoc[தமிழ்]
+
+== পরীক্ষা চালানো
+
+এই প্রকল্পে পরীক্ষা সম্পাদন করতে, টার্মিনালে নিম্নলিখিত কমান্ড ব্যবহার করুন:
+
+[source,shell]
+----
+npm test
+----
+
+এই কমান্ডটি TDD কভারেজ সহ সম্পূর্ণ Jest পরীক্ষা স্যুট চালায়।
+
+=== বিকল্প পরীক্ষা কমান্ড
+
+[source,shell]
+----
+# কভারেজ সহ পরীক্ষা চালান
+npm run test:coverage
+
+# ওয়াচ মোডে পরীক্ষা চালান
+npm run test:watch
+
+# সমন্বিত CLI পরীক্ষা চালান
+node pilot-agent-cli.js test
+----
+
+== পরীক্ষা স্থাপত্য
+
+আমাদের পরীক্ষাগুলি ষড়ভুজ স্থাপত্য অনুসরণ করে:
+
+[source]
+----
+tests/
+├── domain/              # ব্যবসায়িক যুক্তি পরীক্ষা
+│   ├── entities/        # সত্তা পরীক্ষা
+│   └── services/        # সেবা পরীক্ষা
+└── infrastructure/      # অ্যাডাপ্টার পরীক্ষা
+    └── adapters/        # অবকাঠামো অ্যাডাপ্টার পরীক্ষা
+----
+
+== প্রয়োজনীয়তা
+
+নিশ্চিত করুন যে আপনি প্রকল্পের রুট ডিরেক্টরিতে আছেন এবং `npm install` দিয়ে সমস্ত নির্ভরতা ইনস্টল করা আছে।
+
+== প্রয়োগকৃত TDD নীতি
+
+. **লাল**: একটি ব্যর্থ পরীক্ষা লিখুন
+. **সবুজ**: এটি পাস করার জন্য ন্যূনতম কোড লিখুন
+. **পুনর্গঠন**: পরীক্ষাগুলি সবুজ রেখে কোড উন্নত করুন
+
+== পরীক্ষা কভারেজ
+
+বর্তমান কভারেজ: **৩৮টি পরীক্ষা পাস** ৮০% ন্যূনতম সীমা সহ:
+- শাখা
+- ফাংশন
+- লাইন
+- বিবৃতি

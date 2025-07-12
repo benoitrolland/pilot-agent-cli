@@ -1,0 +1,56 @@
+= کلاینت GitHub Copilot - اطلاعات پروژه
+:toc:
+:lang: fa
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語] | link:info-bn.adoc[বাংলা] | link:info-pt.adoc[Português] | link:info-yue.adoc[粵語] | link:info-vi.adoc[Tiếng Việt] | link:info-tr.adoc[Türkçe] | link:info-it.adoc[Italiano] | *فارسی* | link:info-mr.adoc[मराठी] | link:info-wuu.adoc[吳語] | link:info-ta.adoc[தமிழ்]
+
+== مرور کلی فایل‌ها
+
+=== لایه احراز هویت و کلاینت
+
+- **copilot-auth.js**:
+  . copilot-language-server را راه‌اندازی می‌کند
+  . دیالوگ احراز هویت را مدیریت می‌کند
+  . وضعیت احراز هویت را بررسی و نمایش می‌دهد
+  . CLI تعاملی برای احراز هویت کاربر فراهم می‌کند
+
+- **copilot-client.js**:
+  آداپتور فنی برای Copilot Language Server. احراز هویت، ارتباط با Copilot و تأیید وابستگی‌ها را مدیریت می‌کند.
+
+- **pilot-agent-cli.js**:
+  رابط CLI اصلی که اتوماسیون پروژه را هماهنگ می‌کند: مدیریت پیکربندی، اجرای عامل، تعامل Git.
+
+=== خلاصه معماری
+
+[source]
+----
+copilot-auth.js      → مدیریت احراز هویت
+copilot-client.js    → آداپتور فنی Copilot (زیرساخت)
+pilot-agent-cli.js   → نقطه ورود CLI، هماهنگی کسب‌وکار
+----
+
+== معماری پروژه
+
+=== پیاده‌سازی معماری شش‌ضلعی
+
+[source]
+----
+دامنه (هسته کسب‌وکار)
+├── entities/           # موجودیت‌های کسب‌وکار (ProjectConfig)
+├── ports/             # قراردادهای رابط (FileSystem, GitRepository)
+└── services/          # هماهنگی کسب‌وکار (CopilotAgentService)
+
+زیرساخت (آداپتورها)
+├── adapters/          # پیاده‌سازی‌های مشخص
+├── config/           # مدیریت پیکربندی
+└── process/          # مدیریت فرآیند
+----
+
+=== اصول SOLID اعمال شده
+
+- **S**ingle Responsibility: هر کلاس یک مسئولیت دارد
+- **O**pen/Closed: از طریق رابط‌ها (پورت‌ها) قابل توسعه
+- **L**iskov Substitution: آداپتورها قراردادهایشان را رعایت می‌کنند
+- **I**nterface Segregation: رابط‌های تخصصی و هدفمند
+- **D**ependency Inversion: دامنه فقط به انتزاعات وابسته است

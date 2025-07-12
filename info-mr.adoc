@@ -1,0 +1,56 @@
+= GitHub Copilot क्लायंट - प्रकल्प माहिती
+:toc:
+:lang: mr
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語] | link:info-bn.adoc[বাংলা] | link:info-pt.adoc[Português] | link:info-yue.adoc[粵語] | link:info-vi.adoc[Tiếng Việt] | link:info-tr.adoc[Türkçe] | link:info-it.adoc[Italiano] | link:info-fa.adoc[فارسی] | *मराठी* | link:info-wuu.adoc[吳語] | link:info-ta.adoc[தமிழ்]
+
+== फाइल्सचे विहंगावलोकन
+
+=== प्रमाणीकरण आणि क्लायंट स्तर
+
+- **copilot-auth.js**:
+  . copilot-language-server सुरू करते
+  . प्रमाणीकरण संवाद व्यवस्थापित करते
+  . प्रमाणीकरण स्थिती तपासते आणि प्रदर्शित करते
+  . वापरकर्ता प्रमाणीकरणासाठी परस्परसंवादी CLI प्रदान करते
+
+- **copilot-client.js**:
+  Copilot Language Server साठी तांत्रिक अॅडॉप्टर. प्रमाणीकरण, Copilot शी संवाद आणि अवलंबित्व सत्यापन हाताळते.
+
+- **pilot-agent-cli.js**:
+  प्रकल्प स्वयंचलित व्यवस्थापन करणारे मुख्य CLI इंटरफेस: कॉन्फिगरेशन व्यवस्थापन, एजंट अंमलबजावणी, Git परस्परसंवाद.
+
+=== आर्किटेक्चर सारांश
+
+[source]
+----
+copilot-auth.js      → प्रमाणीकरण व्यवस्थापन
+copilot-client.js    → तांत्रिक Copilot अॅडॉप्टर (पायाभूत सुविधा)
+pilot-agent-cli.js   → CLI प्रवेश बिंदू, व्यावसायिक समन्वय
+----
+
+== प्रकल्प आर्किटेक्चर
+
+=== षटकोनी आर्किटेक्चर अंमलबजावणी
+
+[source]
+----
+डोमेन (व्यावसायिक केंद्र)
+├── entities/           # व्यावसायिक घटक (ProjectConfig)
+├── ports/             # इंटरफेस करार (FileSystem, GitRepository)
+└── services/          # व्यावसायिक समन्वय (CopilotAgentService)
+
+पायाभूत सुविधा (अॅडॉप्टर)
+├── adapters/          # ठोस अंमलबजावणी
+├── config/           # कॉन्फिगरेशन व्यवस्थापन
+└── process/          # प्रक्रिया व्यवस्थापन
+----
+
+=== लागू केलेली SOLID तत्त्वे
+
+- **S**ingle Responsibility: प्रत्येक वर्गाची एक जबाबदारी
+- **O**pen/Closed: इंटरफेसेसद्वारे (पोर्ट्स) विस्तारित करता येणारे
+- **L**iskov Substitution: अॅडॉप्टर त्यांच्या कराराचा आदर करतात
+- **I**nterface Segregation: विशेष, लक्ष्यित इंटरफेसेस
+- **D**ependency Inversion: डोमेन केवळ अमूर्ततेवर अवलंबून

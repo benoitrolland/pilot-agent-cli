@@ -1,0 +1,98 @@
+= Guia de Uso
+:toc:
+:lang: pt
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | link:usage-de.adoc[Deutsch] | link:usage-es.adoc[Español] | link:usage-zh.adoc[中文] | link:usage-hi.adoc[हिन्दी] | link:usage-ru.adoc[Русский] | link:usage-ar.adoc[العربية] | link:usage-ja.adoc[日本語] | link:usage-bn.adoc[বাংলা] | *Português* | link:usage-yue.adoc[粵語] | link:usage-vi.adoc[Tiếng Việt] | link:usage-tr.adoc[Türkçe] | link:usage-it.adoc[Italiano] | link:usage-fa.adoc[فارسی] | link:usage-mr.adoc[मराठी] | link:usage-wuu.adoc[吳語] | link:usage-ta.adoc[தமிழ்]
+
+== Instalação
+
+[source,shell]
+----
+npm install
+----
+
+== Início Rápido
+
+=== 1. Testar a CLI
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. Inicializar configuração
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. Executar testes
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. Ver configuração
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. Executar o agente (após configurar)
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== Uso Avançado
+
+=== Configuração de Autenticação
+Antes de usar o agente, configure a autenticação do GitHub Copilot:
+
+[source,shell]
+----
+# Terminal 1: Iniciar servidor de autenticação
+node copilot-auth.js
+
+# Terminal 2: Usar o cliente
+node copilot-client.js demo
+----
+
+=== Configuração Personalizada
+[source,shell]
+----
+# Executar com arquivo de configuração personalizado
+node pilot-agent-cli.js run --config ./minha-config.json --verbose
+
+# Ver configuração atual
+node pilot-agent-cli.js config
+----
+
+== Comandos Disponíveis
+
+=== Comandos CLI
+- `init` - Criar arquivo de configuração padrão
+- `run` - Executar Pilot Agent com configuração atual
+- `config` - Mostrar configuração atual
+- `test` - Executar testes básicos e validações
+- `help` - Mostrar mensagem de ajuda
+
+=== Opções
+- `--config <caminho>` - Especificar caminho do arquivo de configuração
+- `--verbose` - Ativar log detalhado
+
+== Solução de Problemas
+
+=== Dependências
+Certifique-se de que o GitHub Copilot Language Server está instalado:
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== Autenticação
+Verificar autenticação do GitHub:
+[source,shell]
+----
+gh auth status
+----

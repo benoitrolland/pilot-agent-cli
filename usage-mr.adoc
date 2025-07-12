@@ -1,0 +1,98 @@
+= वापर मार्गदर्शक
+:toc:
+:lang: mr
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | link:usage-de.adoc[Deutsch] | link:usage-es.adoc[Español] | link:usage-zh.adoc[中文] | link:usage-hi.adoc[हिन्दी] | link:usage-ru.adoc[Русский] | link:usage-ar.adoc[العربية] | link:usage-ja.adoc[日本語] | link:usage-bn.adoc[বাংলা] | link:usage-pt.adoc[Português] | link:usage-yue.adoc[粵語] | link:usage-vi.adoc[Tiếng Việt] | link:usage-tr.adoc[Türkçe] | link:usage-it.adoc[Italiano] | link:usage-fa.adoc[فارسی] | *मराठी* | link:usage-wuu.adoc[吳語] | link:usage-ta.adoc[தமிழ்]
+
+== स्थापना
+
+[source,shell]
+----
+npm install
+----
+
+== द्रुत सुरुवात
+
+=== 1. CLI चाचणी करा
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. कॉन्फिगरेशन सुरू करा
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. चाचण्या चालवा
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. कॉन्फिगरेशन पहा
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. एजंट चालवा (कॉन्फिगरेशननंतर)
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== प्रगत वापर
+
+=== प्रमाणीकरण सेटअप
+एजंट वापरण्यापूर्वी, GitHub Copilot प्रमाणीकरण सेट करा:
+
+[source,shell]
+----
+# टर्मिनल 1: प्रमाणीकरण सर्व्हर सुरू करा
+node copilot-auth.js
+
+# टर्मिनल 2: क्लायंट वापरा
+node copilot-client.js demo
+----
+
+=== कस्टम कॉन्फिगरेशन
+[source,shell]
+----
+# कस्टम कॉन्फिग फाइलसह चालवा
+node pilot-agent-cli.js run --config ./माझे-कॉन्फिग.json --verbose
+
+# सध्याचे कॉन्फिगरेशन पहा
+node pilot-agent-cli.js config
+----
+
+== उपलब्ध आदेश
+
+=== CLI आदेश
+- `init` - डीफॉल्ट कॉन्फिगरेशन फाइल तयार करा
+- `run` - सध्याच्या कॉन्फिगसह Pilot Agent चालवा
+- `config` - सध्याचे कॉन्फिगरेशन दाखवा
+- `test` - मूलभूत चाचण्या आणि प्रमाणीकरणे चालवा
+- `help` - मदत संदेश दाखवा
+
+=== पर्याय
+- `--config <पथ>` - कॉन्फिग फाइल पथ निर्दिष्ट करा
+- `--verbose` - तपशीलवार लॉगिंग सक्षम करा
+
+== समस्यानिवारण
+
+=== अवलंबित्वे
+GitHub Copilot Language Server स्थापित असल्याची खात्री करा:
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== प्रमाणीकरण
+GitHub प्रमाणीकरण सत्यापित करा:
+[source,shell]
+----
+gh auth status
+----

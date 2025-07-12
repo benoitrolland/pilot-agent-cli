@@ -1,0 +1,56 @@
+= GitHub Copilot ক্লায়েন্ট - প্রকল্পের তথ্য
+:toc:
+:lang: bn
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語] | *বাংলা* | link:info-pt.adoc[Português] | link:info-yue.adoc[粵語] | link:info-vi.adoc[Tiếng Việt] | link:info-tr.adoc[Türkçe] | link:info-it.adoc[Italiano] | link:info-fa.adoc[فارسی] | link:info-mr.adoc[मराठी] | link:info-wuu.adoc[吳語] | link:info-ta.adoc[தமிழ்]
+
+== ফাইল সংক্ষিপ্ত বিবরণ
+
+=== প্রমাণীকরণ এবং ক্লায়েন্ট স্তর
+
+- **copilot-auth.js**:
+  . copilot-language-server চালু করে
+  . প্রমাণীকরণ সংলাপ পরিচালনা করে
+  . প্রমাণীকরণ অবস্থা পরীক্ষা ও প্রদর্শন
+  . ব্যবহারকারী প্রমাণীকরণের জন্য ইন্টারঅ্যাক্টিভ CLI প্রদান
+
+- **copilot-client.js**:
+  Copilot Language Server এর জন্য প্রযুক্তিগত অ্যাডাপ্টার। প্রমাণীকরণ, Copilot এর সাথে যোগাযোগ এবং নির্ভরতা যাচাইকরণ পরিচালনা করে।
+
+- **pilot-agent-cli.js**:
+  প্রকল্প স্বয়ংক্রিয়করণ পরিচালনাকারী প্রধান CLI ইন্টারফেস: কনফিগারেশন ব্যবস্থাপনা, এজেন্ট সম্পাদন, Git ইন্টারঅ্যাকশন।
+
+=== স্থাপত্য সারসংক্ষেপ
+
+[source]
+----
+copilot-auth.js      → প্রমাণীকরণ ব্যবস্থাপনা
+copilot-client.js    → প্রযুক্তিগত Copilot অ্যাডাপ্টার (অবকাঠামো)
+pilot-agent-cli.js   → CLI প্রবেশ বিন্দু, ব্যবসায়িক সমন্বয়
+----
+
+== প্রকল্প স্থাপত্য
+
+=== ষড়ভুজ স্থাপত্য বাস্তবায়ন
+
+[source]
+----
+ডোমেইন (ব্যবসায়িক কেন্দ্র)
+├── entities/           # ব্যবসায়িক সত্তা (ProjectConfig)
+├── ports/             # ইন্টারফেস চুক্তি (FileSystem, GitRepository)
+└── services/          # ব্যবসায়িক সমন্বয় (CopilotAgentService)
+
+অবকাঠামো (অ্যাডাপ্টার)
+├── adapters/          # নির্দিষ্ট বাস্তবায়ন
+├── config/           # কনফিগারেশন ব্যবস্থাপনা
+└── process/          # প্রক্রিয়া ব্যবস্থাপনা
+----
+
+=== প্রয়োগকৃত SOLID নীতি
+
+- **S**ingle Responsibility: প্রতিটি ক্লাসের একটি দায়িত্ব
+- **O**pen/Closed: ইন্টারফেসের মাধ্যমে সম্প্রসারণযোগ্য
+- **L**iskov Substitution: অ্যাডাপ্টাররা তাদের চুক্তি মেনে চলে
+- **I**nterface Segregation: বিশেষায়িত, লক্ষ্যযুক্ত ইন্টারফেস
+- **D**ependency Inversion: ডোমেইন শুধুমাত্র বিমূর্ততার উপর নির্ভর করে
