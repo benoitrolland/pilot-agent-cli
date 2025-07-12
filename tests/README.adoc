@@ -1,0 +1,101 @@
+= Testing Guide
+:toc:
+
+== Introduction
+
+Ce projet utilise une approche *Test-Driven Development (TDD)* avec Jest comme framework de test.
+
+== Structure des tests
+
+[source]
+----
+tests/
+├── domain/              # Tests de la logique métier
+│   ├── entities/        # Tests des entités
+│   └── services/        # Tests des services
+└── infrastructure/      # Tests des adaptateurs
+    └── adapters/        # Tests des adaptateurs d'infrastructure
+----
+
+== Exécution des tests
+
+=== Tests unitaires complets
+[source,bash]
+----
+npm test
+----
+
+=== Tests avec couverture
+[source,bash]
+----
+npm run test:coverage
+----
+
+=== Tests en mode watch
+[source,bash]
+----
+npm run test:watch
+----
+
+=== Tests intégrés dans la CLI
+[source,bash]
+----
+node pilot-agent-cli.js test
+----
+
+== Principes TDD appliqués
+
+. *Red* : Écrire un test qui échoue
+. *Green* : Écrire le code minimal pour le faire passer
+. *Refactor* : Améliorer le code tout en gardant les tests verts
+
+== Types de tests
+
+=== Tests d'entités (Domain)
+- Validation des données
+- Logique métier pure
+- Sérialisation/désérialisation
+
+=== Tests de services (Domain)
+- Orchestration des opérations
+- Gestion des erreurs
+- Intégration des ports
+
+=== Tests d'adaptateurs (Infrastructure)
+- Implémentation des ports
+- Intégration avec les systèmes externes
+- Gestion des erreurs techniques
+
+== Bonnes pratiques
+
+=== Isolation des tests
+Chaque test est indépendant et utilise des mocks pour les dépendances externes.
+
+=== Nomenclature
+- `describe()` : Décrit la classe ou le module testé
+- `it()` : Décrit un comportement spécifique
+- Noms descriptifs et lisibles
+
+=== Couverture
+Objectif : >90% de couverture de code pour la logique métier.
+
+== Configuration Jest
+
+[source,javascript]
+----
+{
+  "testEnvironment": "node",
+  "collectCoverageFrom": [
+    "src/**/*.js",
+    "!src/**/*.test.js"
+  ],
+  "coverageThreshold": {
+    "global": {
+      "branches": 80,
+      "functions": 80,
+      "lines": 80,
+      "statements": 80
+    }
+  }
+}
+----

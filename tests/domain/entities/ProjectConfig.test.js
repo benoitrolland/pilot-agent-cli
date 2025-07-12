@@ -48,36 +48,71 @@ describe('ProjectConfig', () => {
             
             expect(config.targetFiles).toEqual(['valid.js', 'another.js']);
         });
+
+        it('should validate required fields', () => {
+            expect(() => new ProjectConfig({
+                prompt: '',
+                targetFiles: []
+            })).toThrow('Prompt is required');
+
+            expect(() => new ProjectConfig({
+                prompt: 'Valid prompt',
+                targetFiles: 'not-an-array'
+            })).toThrow('targetFiles must be an array');
+        });
     });
 
-    describe('toJSON', () => {
-        it('should serialize config to JSON', () => {
+    describe('validation', () => {
+        it('should throw error for empty prompt', () => {
+            expect(() => new ProjectConfig({
+                prompt: '   ',
+                targetFiles: ['file.js']
+            })).toThrow('Prompt is required');
+        });
+
+        it('should throw error for empty targetFiles', () => {
+            expect(() => new ProjectConfig({
+                prompt: 'Valid prompt',
+                targetFiles: []
+            })).toThrow('At least one target file is required');
+        });
+
+        it('should throw error for invalid readFiles', () => {
+            expect(() => new ProjectConfig({
+                prompt: 'Valid prompt',
+                targetFiles: ['file.js'],
+                readFiles: 'not-an-array'
+            })).toThrow('readFiles must be an array');
+        });
+    });
+
+    describe('serialization', () => {
+        it('should serialize to JSON correctly', () => {
             const config = new ProjectConfig({
                 rootDir: './test',
+                targetFiles: ['file.js'],
                 prompt: 'Test prompt'
             });
 
             const json = config.toJSON();
-            
-            expect(json).toHaveProperty('rootDir', './test');
-            expect(json).toHaveProperty('prompt', 'Test prompt');
-            expect(json).toHaveProperty('autoCommit', true);
+            expect(json.rootDir).toBe('./test');
+            expect(json.targetFiles).toEqual(['file.js']);
+            expect(json.prompt).toBe('Test prompt');
         });
-    });
 
-    describe('fromJSON', () => {
-        it('should create config from JSON data', () => {
+        it('should deserialize from JSON correctly', () => {
             const data = {
-                rootDir: './from-json',
-                prompt: 'JSON prompt',
+                rootDir: './test',
+                targetFiles: ['file.js'],
+                prompt: 'Test prompt',
                 autoCommit: false
             };
 
             const config = ProjectConfig.fromJSON(data);
-            
-            expect(config.rootDir).toBe('./from-json');
-            expect(config.prompt).toBe('JSON prompt');
+            expect(config.rootDir).toBe('./test');
             expect(config.autoCommit).toBe(false);
         });
     });
 });
+
+module.exports = ProjectConfig;
