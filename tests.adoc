@@ -1,0 +1,8 @@
+= tests
+
+Pour exécuter les tests dans ce projet, utilise la commande suivante dans le terminal :
+
+[source,shell]
+node pilot-agent-cli.js test
+Cette commande lance les tests unitaires de base définis dans pilot-agent-cli.js (TDD, logique métier).
+Assure-toi d’être dans le dossier racine du projet et que toutes les dépendances sont installées.

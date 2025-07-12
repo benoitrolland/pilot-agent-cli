@@ -1,0 +1,62 @@
+= info
+
+== files
+
+- copilot-auth.js  :
+
+. Démarre le serveur copilot-language-server
+. Gère le dialogue d’authentification (initiation, confirmation, polling, déconnexion)
+. Vérifie et affiche le statut d’authentification
+. Permet à l’utilisateur de s’authentifier ou de se déconnecter via une interface CLI interactive
+
+
+- Les autres fichiers (copilot-client.js, pilot-agent-cli.js) supposent que l’authentification est déjà active et utilisent le serveur Copilot pour obtenir des suggestions ou orchestrer des automatisations.
+
+En résumé :
+copilot-auth.js = gestion de l’authentification
+copilot-client.js et pilot-agent-cli.js = utilisation de Copilot (après authentification)
+
+- copilot-client.js :
+Ce fichier implémente le client pour le serveur Copilot Language Server. Il gère l’authentification, la communication avec Copilot (requêtes de complétion, suggestions), la vérification des dépendances et propose des mocks pour le développement. Il sert d’adaptateur entre votre application et Copilot.
+
+- pilot-agent-cli.js :
+Ce fichier est l’interface en ligne de commande (CLI) principale. Il orchestre l’automatisation du projet : gestion de la configuration, exécution de l’agent, interaction avec Git, affichage des logs et des résultats. Il utilise CopilotClient pour obtenir des suggestions et applique la logique métier via des services hexagonaux.
+
+- En résumé :
+copilot-client.js : Adaptateur technique Copilot (infrastructure)
+pilot-agent-cli.js : Point d’entrée CLI, orchestration métier (application)
+
+
+Voici la répartition des fichiers selon leur rôle dans l’outillage et la démo :
+
+== Fichiers outils (core, infrastructure, CLI)
+
+
+. copilot-auth.js : Outil CLI pour l’authentification Copilot (infrastructure, interface CLI).
+. copilot-client.js : Client principal pour interagir avec le serveur Copilot (infrastructure, adaptateur technique).
+. pilot-agent-cli.js : CLI d’orchestration métier, utilise CopilotClient et les services hexagonaux.
+. src/infrastructure/process/SecureProcessLauncher.js : Lanceur sécurisé de processus (infrastructure).
+
+== Fichiers exemples et cibles de la démo 
+
+. test_fibonacci.py : Exemple de fichier Python pour tester la complétion Copilot.
+. test_quicksort.js : Exemple de fichier JavaScript pour tester la complétion Copilot.
+. test_react.jsx : Exemple de composant React pour tester la complétion Copilot.
+
+== Fichiers de configuration et cibles métier 
+
+. pilot-agent.config.json : Fichier de configuration du projet pour l’agent.
+. pilot-agent.config.example.json : Exemple de configuration généré par la commande init.
+. Fichiers cibles listés dans la config :
+- src/components/Header.js
+- src/utils/helpers.js
+- docs/API.md
+- README.md
+- package.json
+- src/types/index.ts
+
+== Résumé 
+
+. Les fichiers copilot-auth.js, copilot-client.js, pilot-agent-cli.js, et ceux du dossier src/infrastructure sont des outils.
+. Les fichiers test_fibonacci.py, test_quicksort.js, test_react.jsx sont des exemples/démos.
+. Les fichiers listés dans la config sont des cibles potentielles pour l’automatisation métier.
