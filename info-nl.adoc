@@ -1,0 +1,56 @@
+= GitHub Copilot Client - Projectinformatie
+:toc:
+:lang: nl
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語] | link:info-bn.adoc[বাংলা] | link:info-pt.adoc[Português] | link:info-yue.adoc[粵語] | link:info-vi.adoc[Tiếng Việt] | link:info-tr.adoc[Türkçe] | link:info-it.adoc[Italiano] | link:info-fa.adoc[فارسی] | link:info-mr.adoc[मराठी] | link:info-wuu.adoc[吳語] | link:info-ta.adoc[தமிழ்] | link:info-pl.adoc[Polski] | link:info-ro.adoc[Română] | *Nederlands* | link:info-sv.adoc[Svenska] | link:info-no.adoc[Norsk] | link:info-fi.adoc[Suomi] | link:info-da.adoc[Dansk] | link:info-hr.adoc[Hrvatski] | link:info-bg.adoc[Български] | link:info-el.adoc[Ελληνικά] | link:info-cs.adoc[Čeština]
+
+== Bestandsoverzicht
+
+=== Authenticatie & Client Laag
+
+- **copilot-auth.js**:
+  . Start de copilot-language-server
+  . Beheert authenticatiedialoog
+  . Controleert en toont authenticatiestatus
+  . Biedt interactieve CLI voor gebruikersauthenticatie
+
+- **copilot-client.js**:
+  Technische adapter voor Copilot Language Server. Behandelt authenticatie, communicatie met Copilot en afhankelijkheidsverificatie.
+
+- **pilot-agent-cli.js**:
+  Hoofd CLI-interface die projectautomatisering organiseert: configuratiebeheer, agentuitvoering, Git-interactie.
+
+=== Architectuur Samenvatting
+
+[source]
+----
+copilot-auth.js      → Authenticatiebeheer
+copilot-client.js    → Technische Copilot adapter (infrastructuur)
+pilot-agent-cli.js   → CLI toegangspunt, business orkestratie
+----
+
+== Projectarchitectuur
+
+=== Hexagonale Architectuur Implementatie
+
+[source]
+----
+Domein (Business Kern)
+├── entities/           # Business entiteiten (ProjectConfig)
+├── ports/             # Interface contracten (FileSystem, GitRepository)
+└── services/          # Business orkestratie (CopilotAgentService)
+
+Infrastructuur (Adapters)
+├── adapters/          # Concrete implementaties
+├── config/           # Configuratiebeheer
+└── process/          # Procesbeheer
+----
+
+=== Toegepaste SOLID Principes
+
+- **S**ingle Responsibility: Elke klasse heeft één verantwoordelijkheid
+- **O**pen/Closed: Uitbreidbaar via interfaces (poorten)
+- **L**iskov Substitution: Adapters respecteren hun contracten
+- **I**nterface Segregation: Gespecialiseerde, gerichte interfaces
+- **D**ependency Inversion: Domein hangt alleen af van abstracties

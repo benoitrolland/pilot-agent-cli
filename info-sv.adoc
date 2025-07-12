@@ -1,0 +1,56 @@
+= GitHub Copilot Client - Projektinformation
+:toc:
+:lang: sv
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語] | link:info-bn.adoc[বাংলা] | link:info-pt.adoc[Português] | link:info-yue.adoc[粵語] | link:info-vi.adoc[Tiếng Việt] | link:info-tr.adoc[Türkçe] | link:info-it.adoc[Italiano] | link:info-fa.adoc[فارسی] | link:info-mr.adoc[मराठी] | link:info-wuu.adoc[吳語] | link:info-ta.adoc[தமிழ்] | link:info-pl.adoc[Polski] | link:info-ro.adoc[Română] | link:info-nl.adoc[Nederlands] | *Svenska* | link:info-no.adoc[Norsk] | link:info-fi.adoc[Suomi] | link:info-da.adoc[Dansk] | link:info-hr.adoc[Hrvatski] | link:info-bg.adoc[Български] | link:info-el.adoc[Ελληνικά] | link:info-cs.adoc[Čeština]
+
+== Filöversikt
+
+=== Autentiserings- och Klientlager
+
+- **copilot-auth.js**:
+  . Startar copilot-language-server
+  . Hanterar autentiseringsdialog
+  . Kontrollerar och visar autentiseringsstatus
+  . Tillhandahåller interaktiv CLI för användarautentisering
+
+- **copilot-client.js**:
+  Teknisk adapter för Copilot Language Server. Hanterar autentisering, kommunikation med Copilot och beroendevalidering.
+
+- **pilot-agent-cli.js**:
+  Huvud CLI-gränssnitt som organiserar projektautomatisering: konfigurationshantering, agentexekvering, Git-interaktion.
+
+=== Arkitektursammanfattning
+
+[source]
+----
+copilot-auth.js      → Autentiseringshantering
+copilot-client.js    → Teknisk Copilot adapter (infrastruktur)
+pilot-agent-cli.js   → CLI-ingångspunkt, affärsorkestrering
+----
+
+== Projektarkitektur
+
+=== Hexagonal Arkitektur Implementation
+
+[source]
+----
+Domän (Affärskärna)
+├── entities/           # Affärsentiteter (ProjectConfig)
+├── ports/             # Gränssnittskontrakt (FileSystem, GitRepository)
+└── services/          # Affärsorkestrering (CopilotAgentService)
+
+Infrastruktur (Adaptrar)
+├── adapters/          # Konkreta implementationer
+├── config/           # Konfigurationshantering
+└── process/          # Processhantering
+----
+
+=== Tillämpade SOLID-principer
+
+- **S**ingle Responsibility: Varje klass har ett ansvar
+- **O**pen/Closed: Utbyggbar via gränssnitt (portar)
+- **L**iskov Substitution: Adaptrar respekterar sina kontrakt
+- **I**nterface Segregation: Specialiserade, riktade gränssnitt
+- **D**ependency Inversion: Domänen beror endast på abstraktioner

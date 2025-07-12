@@ -1,0 +1,63 @@
+= Testguide
+:toc:
+:lang: no
+
+[.lead]
+link:tests.adoc[English] | link:tests-fr.adoc[Français] | link:tests-de.adoc[Deutsch] | link:tests-es.adoc[Español] | link:tests-zh.adoc[中文] | link:tests-hi.adoc[हिन्दी] | link:tests-ru.adoc[Русский] | link:tests-ar.adoc[العربية] | link:tests-ja.adoc[日本語] | link:tests-bn.adoc[বাংলা] | link:tests-pt.adoc[Português] | link:tests-yue.adoc[粵語] | link:tests-vi.adoc[Tiếng Việt] | link:tests-tr.adoc[Türkçe] | link:tests-it.adoc[Italiano] | link:tests-fa.adoc[فارسی] | link:tests-mr.adoc[मराठी] | link:tests-wuu.adoc[吳語] | link:tests-ta.adoc[தமிழ்] | link:tests-pl.adoc[Polski] | link:tests-ro.adoc[Română] | link:tests-nl.adoc[Nederlands] | link:tests-sv.adoc[Svenska] | *Norsk* | link:tests-fi.adoc[Suomi] | link:tests-da.adoc[Dansk] | link:tests-hr.adoc[Hrvatski] | link:tests-bg.adoc[Български] | link:tests-el.adoc[Ελληνικά] | link:tests-cs.adoc[Čeština]
+
+== Kjøre Tester
+
+For å kjøre tester i dette prosjektet, bruk følgende kommando i terminalen:
+
+[source,shell]
+----
+npm test
+----
+
+Denne kommandoen kjører den komplette Jest testsuiten med TDD-dekning.
+
+=== Alternative testkommandoer
+
+[source,shell]
+----
+# Kjør tester med dekning
+npm run test:coverage
+
+# Kjør tester i overvåkningsmodus
+npm run test:watch
+
+# Kjør integrerte CLI-tester
+node pilot-agent-cli.js test
+----
+
+== Testarkitektur
+
+Våre tester følger den heksagonale arkitekturen:
+
+[source]
+----
+tests/
+├── domain/              # Forretningslogikktester
+│   ├── entities/        # Entitetstester
+│   └── services/        # Servicetester
+└── infrastructure/      # Adaptertester
+    └── adapters/        # Infrastrukturadaptertester
+----
+
+== Krav
+
+Sørg for at du er i prosjektets rotkatalog og at alle avhengigheter er installert med `npm install`.
+
+== Anvendte TDD-prinsipper
+
+. **Rød**: Skriv en mislykket test
+. **Grønn**: Skriv minimal kode for å få den til å bestå
+. **Refaktorer**: Forbedre kode mens testene forblir grønne
+
+== Testdekning
+
+Gjeldende dekning: **38 tester bestått** med 80% minimumsterskel for:
+- Grener
+- Funksjoner
+- Linjer
+- Uttalelser

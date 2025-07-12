@@ -1,0 +1,63 @@
+= Testiopas
+:toc:
+:lang: fi
+
+[.lead]
+link:tests.adoc[English] | link:tests-fr.adoc[Français] | link:tests-de.adoc[Deutsch] | link:tests-es.adoc[Español] | link:tests-zh.adoc[中文] | link:tests-hi.adoc[हिन्दी] | link:tests-ru.adoc[Русский] | link:tests-ar.adoc[العربية] | link:tests-ja.adoc[日本語] | link:tests-bn.adoc[বাংলা] | link:tests-pt.adoc[Português] | link:tests-yue.adoc[粵語] | link:tests-vi.adoc[Tiếng Việt] | link:tests-tr.adoc[Türkçe] | link:tests-it.adoc[Italiano] | link:tests-fa.adoc[فارسی] | link:tests-mr.adoc[मराठी] | link:tests-wuu.adoc[吳語] | link:tests-ta.adoc[தமிழ்] | link:tests-pl.adoc[Polski] | link:tests-ro.adoc[Română] | link:tests-nl.adoc[Nederlands] | link:tests-sv.adoc[Svenska] | link:tests-no.adoc[Norsk] | *Suomi* | link:tests-da.adoc[Dansk] | link:tests-hr.adoc[Hrvatski] | link:tests-bg.adoc[Български] | link:tests-el.adoc[Ελληνικά] | link:tests-cs.adoc[Čeština]
+
+== Testien Suorittaminen
+
+Testien suorittamiseksi tässä projektissa, käytä seuraavaa komentoa terminaalissa:
+
+[source,shell]
+----
+npm test
+----
+
+Tämä komento suorittaa täydellisen Jest-testisarjan TDD-kattavuuden kanssa.
+
+=== Vaihtoehtoiset testikomennot
+
+[source,shell]
+----
+# Suorita testit kattavuuden kanssa
+npm run test:coverage
+
+# Suorita testit tarkkailutilassa
+npm run test:watch
+
+# Suorita integroidut CLI-testit
+node pilot-agent-cli.js test
+----
+
+== Testiarkkitehtuuri
+
+Testimme noudattavat kuusikulmio-arkkitehtuuria:
+
+[source]
+----
+tests/
+├── domain/              # Liiketoimintalogiikan testit
+│   ├── entities/        # Entiteettitestit
+│   └── services/        # Palvelutestit
+└── infrastructure/      # Sovittimen testit
+    └── adapters/        # Infrastruktuurisovittimen testit
+----
+
+== Vaatimukset
+
+Varmista, että olet projektin juurihakemistossa ja että kaikki riippuvuudet on asennettu komennolla `npm install`.
+
+== Sovelletut TDD-periaatteet
+
+. **Punainen**: Kirjoita epäonnistuva testi
+. **Vihreä**: Kirjoita minimaalinen koodi sen läpäisemiseksi
+. **Refaktorointi**: Paranna koodia pitäen testit vihreinä
+
+== Testikattavuus
+
+Nykyinen kattavuus: **38 testiä läpäissyt** 80% vähimmäiskynnyksen kanssa:
+- Haarat
+- Funktiot
+- Rivit
+- Lausunnot

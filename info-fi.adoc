@@ -1,0 +1,56 @@
+= GitHub Copilot Client - Projektin Tiedot
+:toc:
+:lang: fi
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語] | link:info-bn.adoc[বাংলা] | link:info-pt.adoc[Português] | link:info-yue.adoc[粵語] | link:info-vi.adoc[Tiếng Việt] | link:info-tr.adoc[Türkçe] | link:info-it.adoc[Italiano] | link:info-fa.adoc[فارسی] | link:info-mr.adoc[मराठी] | link:info-wuu.adoc[吳語] | link:info-ta.adoc[தமிழ்] | link:info-pl.adoc[Polski] | link:info-ro.adoc[Română] | link:info-nl.adoc[Nederlands] | link:info-sv.adoc[Svenska] | link:info-no.adoc[Norsk] | *Suomi* | link:info-da.adoc[Dansk] | link:info-hr.adoc[Hrvatski] | link:info-bg.adoc[Български] | link:info-el.adoc[Ελληνικά] | link:info-cs.adoc[Čeština]
+
+== Tiedostojen Yleiskatsaus
+
+=== Todennus- ja Asiakastaso
+
+- **copilot-auth.js**:
+  . Käynnistää copilot-language-server
+  . Hallitsee todennusdialogi
+  . Tarkistaa ja näyttää todennustila
+  . Tarjoaa interaktiivinen CLI käyttäjätodennukselle
+
+- **copilot-client.js**:
+  Tekninen adapteri Copilot Language Server:lle. Käsittelee todennuksen, Copilot-kommunikaation ja riippuvuuksien varmistuksen.
+
+- **pilot-agent-cli.js**:
+  Pääasiallinen CLI-käyttöliittymä, joka järjestää projektin automatisoinnin: konfiguraatioiden hallinta, agentin suoritus, Git-vuorovaikutus.
+
+=== Arkkitehtuurin Yhteenveto
+
+[source]
+----
+copilot-auth.js      → Todennuksen hallinta
+copilot-client.js    → Tekninen Copilot adapteri (infrastruktuuri)
+pilot-agent-cli.js   → CLI sisäänkäynti, liiketoiminnan orkestrointi
+----
+
+== Projektin Arkkitehtuuri
+
+=== Kuusikulmaisena Arkkitehtuurin Toteutus
+
+[source]
+----
+Toimialue (Liiketoiminta Ydin)
+├── entities/           # Liiketoiminta entiteetit (ProjectConfig)
+├── ports/             # Käyttöliittymä sopimukset (FileSystem, GitRepository)
+└── services/          # Liiketoiminta orkestrointi (CopilotAgentService)
+
+Infrastruktuuri (Adapterit)
+├── adapters/          # Konkreettiset toteutukset
+├── config/           # Konfiguraation hallinta
+└── process/          # Prosessien hallinta
+----
+
+=== Sovelletut SOLID-periaatteet
+
+- **S**ingle Responsibility: Jokaisella luokalla on yksi vastuu
+- **O**pen/Closed: Laajennettavissa käyttöliittymien kautta (portit)
+- **L**iskov Substitution: Adapterit kunnioittavat sopimuksiaan
+- **I**nterface Segregation: Erikoistuneita, kohdennettuja käyttöliittymiä
+- **D**ependency Inversion: Toimialue riippuu vain abstraktioista

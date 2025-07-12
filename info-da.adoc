@@ -1,0 +1,56 @@
+= GitHub Copilot Client - Projektinformation
+:toc:
+:lang: da
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語] | link:info-bn.adoc[বাংলা] | link:info-pt.adoc[Português] | link:info-yue.adoc[粵語] | link:info-vi.adoc[Tiếng Việt] | link:info-tr.adoc[Türkçe] | link:info-it.adoc[Italiano] | link:info-fa.adoc[فارسی] | link:info-mr.adoc[मराठी] | link:info-wuu.adoc[吳語] | link:info-ta.adoc[தமிழ்] | link:info-pl.adoc[Polski] | link:info-ro.adoc[Română] | link:info-nl.adoc[Nederlands] | link:info-sv.adoc[Svenska] | link:info-no.adoc[Norsk] | link:info-fi.adoc[Suomi] | *Dansk* | link:info-hr.adoc[Hrvatski] | link:info-bg.adoc[Български] | link:info-el.adoc[Ελληνικά] | link:info-cs.adoc[Čeština]
+
+== Filoversigt
+
+=== Godkendelses- og Klientlag
+
+- **copilot-auth.js**:
+  . Starter copilot-language-server
+  . Håndterer godkendelsesdialog
+  . Tjekker og viser godkendelsesstatus
+  . Giver interaktiv CLI til brugergodkendelse
+
+- **copilot-client.js**:
+  Teknisk adapter til Copilot Language Server. Håndterer godkendelse, kommunikation med Copilot og afhængighedsverifikation.
+
+- **pilot-agent-cli.js**:
+  Hoved CLI-interface der organiserer projektautomatisering: konfigurationsstyring, agentudførelse, Git-interaktion.
+
+=== Arkitekturoversigt
+
+[source]
+----
+copilot-auth.js      → Godkendelsesstyring
+copilot-client.js    → Teknisk Copilot adapter (infrastruktur)
+pilot-agent-cli.js   → CLI indgangspunkt, forretningsorkestrering
+----
+
+== Projektarkitektur
+
+=== Hexagonal Arkitektur Implementation
+
+[source]
+----
+Domæne (Forretningskerne)
+├── entities/           # Forretningsenheder (ProjectConfig)
+├── ports/             # Grænsefladekontrakter (FileSystem, GitRepository)
+└── services/          # Forretningsorkestrering (CopilotAgentService)
+
+Infrastruktur (Adaptere)
+├── adapters/          # Konkrete implementeringer
+├── config/           # Konfigurationsstyring
+└── process/          # Processtyring
+----
+
+=== Anvendte SOLID-principper
+
+- **S**ingle Responsibility: Hver klasse har ét ansvar
+- **O**pen/Closed: Udvidelig via grænseflader (porte)
+- **L**iskov Substitution: Adaptere respekterer deres kontrakter
+- **I**nterface Segregation: Specialiserede, målrettede grænseflader
+- **D**ependency Inversion: Domænet afhænger kun af abstraktioner

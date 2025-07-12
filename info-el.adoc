@@ -1,0 +1,56 @@
+= GitHub Copilot Client - Πληροφορίες Έργου
+:toc:
+:lang: el
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語] | link:info-bn.adoc[বাংলা] | link:info-pt.adoc[Português] | link:info-yue.adoc[粵語] | link:info-vi.adoc[Tiếng Việt] | link:info-tr.adoc[Türkçe] | link:info-it.adoc[Italiano] | link:info-fa.adoc[فارسی] | link:info-mr.adoc[मराठी] | link:info-wuu.adoc[吳語] | link:info-ta.adoc[தமிழ்] | link:info-pl.adoc[Polski] | link:info-ro.adoc[Română] | link:info-nl.adoc[Nederlands] | link:info-sv.adoc[Svenska] | link:info-no.adoc[Norsk] | link:info-fi.adoc[Suomi] | link:info-da.adoc[Dansk] | link:info-hr.adoc[Hrvatski] | link:info-bg.adoc[Български] | *Ελληνικά* | link:info-cs.adoc[Čeština]
+
+== Επισκόπηση Αρχείων
+
+=== Επίπεδο Ταυτοποίησης και Πελάτη
+
+- **copilot-auth.js**:
+  . Εκκινεί τον copilot-language-server
+  . Διαχειρίζεται τον διάλογο ταυτοποίησης
+  . Ελέγχει και εμφανίζει την κατάσταση ταυτοποίησης
+  . Παρέχει διαδραστικό CLI για την ταυτοποίηση χρήστη
+
+- **copilot-client.js**:
+  Τεχνικός προσαρμογέας για τον Copilot Language Server. Χειρίζεται την ταυτοποίηση, την επικοινωνία με το Copilot και την επαλήθευση εξαρτήσεων.
+
+- **pilot-agent-cli.js**:
+  Κύρια διεπαφή CLI που οργανώνει την αυτοματοποίηση του έργου: διαχείριση διαμόρφωσης, εκτέλεση πράκτορα, αλληλεπίδραση Git.
+
+=== Περίληψη Αρχιτεκτονικής
+
+[source]
+----
+copilot-auth.js      → Διαχείριση ταυτοποίησης
+copilot-client.js    → Τεχνικός προσαρμογέας Copilot (υποδομή)
+pilot-agent-cli.js   → Σημείο εισόδου CLI, ενορχήστρωση επιχειρήσεων
+----
+
+== Αρχιτεκτονική Έργου
+
+=== Υλοποίηση Εξαγωνικής Αρχιτεκτονικής
+
+[source]
+----
+Τομέας (Επιχειρηματικός Πυρήνας)
+├── entities/           # Επιχειρηματικές οντότητες (ProjectConfig)
+├── ports/             # Συμβόλαια διεπαφής (FileSystem, GitRepository)
+└── services/          # Επιχειρηματική ενορχήστρωση (CopilotAgentService)
+
+Υποδομή (Προσαρμογείς)
+├── adapters/          # Συγκεκριμένες υλοποιήσεις
+├── config/           # Διαχείριση διαμόρφωσης
+└── process/          # Διαχείριση διεργασιών
+----
+
+=== Εφαρμοσμένες Αρχές SOLID
+
+- **S**ingle Responsibility: Κάθε κλάση έχει μία ευθύνη
+- **O**pen/Closed: Επεκτάσιμη μέσω διεπαφών (θυρών)
+- **L**iskov Substitution: Οι προσαρμογείς σέβονται τα συμβόλαιά τους
+- **I**nterface Segregation: Εξειδικευμένες, στοχευμένες διεπαφές
+- **D**ependency Inversion: Ο τομέας εξαρτάται μόνο από αφαιρέσεις

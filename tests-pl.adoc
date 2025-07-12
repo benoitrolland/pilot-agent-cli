@@ -1,0 +1,63 @@
+= Przewodnik Testowania
+:toc:
+:lang: pl
+
+[.lead]
+link:tests.adoc[English] | link:tests-fr.adoc[Français] | link:tests-de.adoc[Deutsch] | link:tests-es.adoc[Español] | link:tests-zh.adoc[中文] | link:tests-hi.adoc[हिन्दी] | link:tests-ru.adoc[Русский] | link:tests-ar.adoc[العربية] | link:tests-ja.adoc[日本語] | link:tests-bn.adoc[বাংলা] | link:tests-pt.adoc[Português] | link:tests-yue.adoc[粵語] | link:tests-vi.adoc[Tiếng Việt] | link:tests-tr.adoc[Türkçe] | link:tests-it.adoc[Italiano] | link:tests-fa.adoc[فارسی] | link:tests-mr.adoc[मराठी] | link:tests-wuu.adoc[吳語] | link:tests-ta.adoc[தமிழ்] | *Polski* | link:tests-ro.adoc[Română] | link:tests-nl.adoc[Nederlands] | link:tests-sv.adoc[Svenska] | link:tests-no.adoc[Norsk] | link:tests-fi.adoc[Suomi] | link:tests-da.adoc[Dansk] | link:tests-hr.adoc[Hrvatski] | link:tests-bg.adoc[Български] | link:tests-el.adoc[Ελληνικά] | link:tests-cs.adoc[Čeština]
+
+== Uruchamianie Testów
+
+Aby wykonać testy w tym projekcie, użyj następującej komendy w terminalu:
+
+[source,shell]
+----
+npm test
+----
+
+Ta komenda uruchamia kompletny zestaw testów Jest z pokryciem TDD.
+
+=== Alternatywne komendy testów
+
+[source,shell]
+----
+# Uruchom testy z pokryciem
+npm run test:coverage
+
+# Uruchom testy w trybie obserwacji
+npm run test:watch
+
+# Uruchom zintegrowane testy CLI
+node pilot-agent-cli.js test
+----
+
+== Architektura Testów
+
+Nasze testy podążają za architekturą heksagonalną:
+
+[source]
+----
+tests/
+├── domain/              # Testy logiki biznesowej
+│   ├── entities/        # Testy encji
+│   └── services/        # Testy serwisów
+└── infrastructure/      # Testy adapterów
+    └── adapters/        # Testy adapterów infrastruktury
+----
+
+== Wymagania
+
+Upewnij się, że jesteś w głównym katalogu projektu i że wszystkie zależności są zainstalowane przez `npm install`.
+
+== Zastosowane Zasady TDD
+
+. **Czerwony**: Napisz test, który nie przechodzi
+. **Zielony**: Napisz minimalny kod, aby przeszedł
+. **Refaktoryzacja**: Popraw kod utrzymując testy zielone
+
+== Pokrycie Testów
+
+Aktualne pokrycie: **38 testów przechodzi** z minimum 80% progiem dla:
+- Gałęzi
+- Funkcji
+- Linii
+- Instrukcji

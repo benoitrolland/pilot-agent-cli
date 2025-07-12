@@ -1,0 +1,56 @@
+= GitHub Copilot Client - Informacije o Projektu
+:toc:
+:lang: hr
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語] | link:info-bn.adoc[বাংলা] | link:info-pt.adoc[Português] | link:info-yue.adoc[粵語] | link:info-vi.adoc[Tiếng Việt] | link:info-tr.adoc[Türkçe] | link:info-it.adoc[Italiano] | link:info-fa.adoc[فارسی] | link:info-mr.adoc[मराठी] | link:info-wuu.adoc[吳語] | link:info-ta.adoc[தமிழ்] | link:info-pl.adoc[Polski] | link:info-ro.adoc[Română] | link:info-nl.adoc[Nederlands] | link:info-sv.adoc[Svenska] | link:info-no.adoc[Norsk] | link:info-fi.adoc[Suomi] | link:info-da.adoc[Dansk] | *Hrvatski* | link:info-bg.adoc[Български] | link:info-el.adoc[Ελληνικά] | link:info-cs.adoc[Čeština]
+
+== Pregled Datoteka
+
+=== Sloj Autentifikacije i Klijenta
+
+- **copilot-auth.js**:
+  . Pokreta copilot-language-server
+  . Upravlja dijalogu autentifikacije
+  . Provjerava i prikazuje status autentifikacije
+  . Pruža interaktivni CLI za korisničku autentifikaciju
+
+- **copilot-client.js**:
+  Tehnički adapter za Copilot Language Server. Rukuje autentifikacijom, komunikacijom s Copilot i verifikacijom ovisnosti.
+
+- **pilot-agent-cli.js**:
+  Glavno CLI sučelje koje organizira automatizaciju projekta: upravljanje konfiguracijama, izvršavanje agenta, Git interakcija.
+
+=== Sažetak Arhitekture
+
+[source]
+----
+copilot-auth.js      → Upravljanje autentifikacijom
+copilot-client.js    → Tehnički Copilot adapter (infrastruktura)
+pilot-agent-cli.js   → CLI ulazna točka, poslovna orkestracija
+----
+
+== Arhitektura Projekta
+
+=== Implementacija Heksagonalne Arhitekture
+
+[source]
+----
+Domena (Poslovna Jezgra)
+├── entities/           # Poslovni entiteti (ProjectConfig)
+├── ports/             # Ugovori sučelja (FileSystem, GitRepository)
+└── services/          # Poslovna orkestracija (CopilotAgentService)
+
+Infrastruktura (Adapteri)
+├── adapters/          # Konkretne implementacije
+├── config/           # Upravljanje konfiguracijama
+└── process/          # Upravljanje procesima
+----
+
+=== Primijenjeni SOLID Principi
+
+- **S**ingle Responsibility: Svaka klasa ima jednu odgovornost
+- **O**pen/Closed: Proširiva putem sučelja (portovi)
+- **L**iskov Substitution: Adapteri poštuju svoje ugovore
+- **I**nterface Segregation: Specijalizirana, ciljna sučelja
+- **D**ependency Inversion: Domena ovisi samo o apstrakcijama

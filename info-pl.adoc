@@ -1,0 +1,56 @@
+= GitHub Copilot Client - Informacje o Projekcie
+:toc:
+:lang: pl
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語] | link:info-bn.adoc[বাংলা] | link:info-pt.adoc[Português] | link:info-yue.adoc[粵語] | link:info-vi.adoc[Tiếng Việt] | link:info-tr.adoc[Türkçe] | link:info-it.adoc[Italiano] | link:info-fa.adoc[فارسی] | link:info-mr.adoc[मराठी] | link:info-wuu.adoc[吳語] | link:info-ta.adoc[தமிழ்] | *Polski* | link:info-ro.adoc[Română] | link:info-nl.adoc[Nederlands] | link:info-sv.adoc[Svenska] | link:info-no.adoc[Norsk] | link:info-fi.adoc[Suomi] | link:info-da.adoc[Dansk] | link:info-hr.adoc[Hrvatski] | link:info-bg.adoc[Български] | link:info-el.adoc[Ελληνικά] | link:info-cs.adoc[Čeština]
+
+== Przegląd Plików
+
+=== Warstwa Uwierzytelniania i Klienta
+
+- **copilot-auth.js**:
+  . Uruchamia copilot-language-server
+  . Zarządza dialogiem uwierzytelniania
+  . Sprawdza i wyświetla status uwierzytelniania
+  . Zapewnia interaktywny CLI dla uwierzytelniania użytkownika
+
+- **copilot-client.js**:
+  Adapter techniczny dla Copilot Language Server. Obsługuje uwierzytelnianie, komunikację z Copilot i weryfikację zależności.
+
+- **pilot-agent-cli.js**:
+  Główny interfejs CLI organizujący automatyzację projektu: zarządzanie konfiguracją, wykonanie agenta, interakcja Git.
+
+=== Podsumowanie Architektury
+
+[source]
+----
+copilot-auth.js      → Zarządzanie uwierzytelnianiem
+copilot-client.js    → Adapter techniczny Copilot (infrastruktura)
+pilot-agent-cli.js   → Punkt wejścia CLI, orkiestracja biznesowa
+----
+
+== Architektura Projektu
+
+=== Implementacja Architektury Heksagonalnej
+
+[source]
+----
+Domena (Rdzeń Biznesowy)
+├── entities/           # Encje biznesowe (ProjectConfig)
+├── ports/             # Kontrakty interfejsów (FileSystem, GitRepository)
+└── services/          # Orkiestracja biznesowa (CopilotAgentService)
+
+Infrastruktura (Adaptery)
+├── adapters/          # Konkretne implementacje
+├── config/           # Zarządzanie konfiguracją
+└── process/          # Zarządzanie procesami
+----
+
+=== Zastosowane Zasady SOLID
+
+- **S**ingle Responsibility: Każda klasa ma jedną odpowiedzialność
+- **O**pen/Closed: Rozszerzalna przez interfejsy (porty)
+- **L**iskov Substitution: Adaptery respektują swoje kontrakty
+- **I**nterface Segregation: Wyspecjalizowane, ukierunkowane interfejsy
+- **D**ependency Inversion: Domena zależy tylko od abstrakcji

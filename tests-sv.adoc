@@ -1,0 +1,63 @@
+= Testguide
+:toc:
+:lang: sv
+
+[.lead]
+link:tests.adoc[English] | link:tests-fr.adoc[Français] | link:tests-de.adoc[Deutsch] | link:tests-es.adoc[Español] | link:tests-zh.adoc[中文] | link:tests-hi.adoc[हिन्दी] | link:tests-ru.adoc[Русский] | link:tests-ar.adoc[العربية] | link:tests-ja.adoc[日本語] | link:tests-bn.adoc[বাংলা] | link:tests-pt.adoc[Português] | link:tests-yue.adoc[粵語] | link:tests-vi.adoc[Tiếng Việt] | link:tests-tr.adoc[Türkçe] | link:tests-it.adoc[Italiano] | link:tests-fa.adoc[فارسی] | link:tests-mr.adoc[मराठी] | link:tests-wuu.adoc[吳語] | link:tests-ta.adoc[தமிழ்] | link:tests-pl.adoc[Polski] | link:tests-ro.adoc[Română] | link:tests-nl.adoc[Nederlands] | *Svenska* | link:tests-no.adoc[Norsk] | link:tests-fi.adoc[Suomi] | link:tests-da.adoc[Dansk] | link:tests-hr.adoc[Hrvatski] | link:tests-bg.adoc[Български] | link:tests-el.adoc[Ελληνικά] | link:tests-cs.adoc[Čeština]
+
+== Köra Tester
+
+För att köra tester i detta projekt, använd följande kommando i terminalen:
+
+[source,shell]
+----
+npm test
+----
+
+Detta kommando kör den kompletta Jest testsviten med TDD-täckning.
+
+=== Alternativa testkommandon
+
+[source,shell]
+----
+# Kör tester med täckning
+npm run test:coverage
+
+# Kör tester i bevakningsläge
+npm run test:watch
+
+# Kör integrerade CLI-tester
+node pilot-agent-cli.js test
+----
+
+== Testarkitektur
+
+Våra tester följer den hexagonala arkitekturen:
+
+[source]
+----
+tests/
+├── domain/              # Affärslogiktester
+│   ├── entities/        # Entitetstester
+│   └── services/        # Servicetester
+└── infrastructure/      # Adaptertester
+    └── adapters/        # Infrastrukturadaptertester
+----
+
+== Krav
+
+Se till att du är i projektets rotkatalog och att alla beroenden är installerade med `npm install`.
+
+== Tillämpade TDD-principer
+
+. **Röd**: Skriv ett misslyckande test
+. **Grön**: Skriv minimal kod för att få det att passera
+. **Refaktorera**: Förbättra kod medan testerna förblir gröna
+
+== Testtäckning
+
+Nuvarande täckning: **38 tester passerar** med 80% minimumtröskel för:
+- Grenar
+- Funktioner
+- Rader
+- Påståenden

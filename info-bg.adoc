@@ -1,0 +1,56 @@
+= GitHub Copilot Client - Информация за Проекта
+:toc:
+:lang: bg
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語] | link:info-bn.adoc[বাংলা] | link:info-pt.adoc[Português] | link:info-yue.adoc[粵語] | link:info-vi.adoc[Tiếng Việt] | link:info-tr.adoc[Türkçe] | link:info-it.adoc[Italiano] | link:info-fa.adoc[فارسی] | link:info-mr.adoc[मराठी] | link:info-wuu.adoc[吳語] | link:info-ta.adoc[தமிழ்] | link:info-pl.adoc[Polski] | link:info-ro.adoc[Română] | link:info-nl.adoc[Nederlands] | link:info-sv.adoc[Svenska] | link:info-no.adoc[Norsk] | link:info-fi.adoc[Suomi] | link:info-da.adoc[Dansk] | link:info-hr.adoc[Hrvatski] | *Български* | link:info-el.adoc[Ελληνικά] | link:info-cs.adoc[Čeština]
+
+== Преглед на Файловете
+
+=== Слой за Автентикация и Клиент
+
+- **copilot-auth.js**:
+  . Стартира copilot-language-server
+  . Управлява диалога за автентикация
+  . Проверява и показва статуса на автентикацията
+  . Предоставя интерактивен CLI за потребителска автентикация
+
+- **copilot-client.js**:
+  Технически адаптер за Copilot Language Server. Обработва автентикацията, комуникацията с Copilot и верификацията на зависимостите.
+
+- **pilot-agent-cli.js**:
+  Основен CLI интерфейс, който организира автоматизацията на проекта: управление на конфигурациите, изпълнение на агента, Git взаимодействие.
+
+=== Резюме на Архитектурата
+
+[source]
+----
+copilot-auth.js      → Управление на автентикацията
+copilot-client.js    → Технически Copilot адаптер (инфраструктура)
+pilot-agent-cli.js   → CLI входна точка, бизнес оркестрация
+----
+
+== Архитектура на Проекта
+
+=== Implementация на Шестоъгълна Архитектура
+
+[source]
+----
+Домейн (Бизнес Ядро)
+├── entities/           # Бизнес обекти (ProjectConfig)
+├── ports/             # Интерфейсни договори (FileSystem, GitRepository)
+└── services/          # Бизнес оркестрация (CopilotAgentService)
+
+Инфраструктура (Адаптери)
+├── adapters/          # Конкретни имплементации
+├── config/           # Управление на конфигурацията
+└── process/          # Управление на процесите
+----
+
+=== Приложени SOLID Принципи
+
+- **S**ingle Responsibility: Всеки клас има една отговорност
+- **O**pen/Closed: Разширяем чрез интерфейси (портове)
+- **L**iskov Substitution: Адаптерите спазват своите договори
+- **I**nterface Segregation: Специализирани, целенасочени интерфейси
+- **D**ependency Inversion: Домейнът зависи само от абстракции

@@ -1,0 +1,56 @@
+= GitHub Copilot Client - Informații despre Proiect
+:toc:
+:lang: ro
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語] | link:info-bn.adoc[বাংলা] | link:info-pt.adoc[Português] | link:info-yue.adoc[粵語] | link:info-vi.adoc[Tiếng Việt] | link:info-tr.adoc[Türkçe] | link:info-it.adoc[Italiano] | link:info-fa.adoc[فارسی] | link:info-mr.adoc[मराठी] | link:info-wuu.adoc[吳語] | link:info-ta.adoc[தமிழ்] | link:info-pl.adoc[Polski] | *Română* | link:info-nl.adoc[Nederlands] | link:info-sv.adoc[Svenska] | link:info-no.adoc[Norsk] | link:info-fi.adoc[Suomi] | link:info-da.adoc[Dansk] | link:info-hr.adoc[Hrvatski] | link:info-bg.adoc[Български] | link:info-el.adoc[Ελληνικά] | link:info-cs.adoc[Čeština]
+
+== Prezentare Generală Fișiere
+
+=== Stratul de Autentificare și Client
+
+- **copilot-auth.js**:
+  . Pornește copilot-language-server
+  . Gestionează dialogul de autentificare
+  . Verifică și afișează starea autentificării
+  . Oferă CLI interactiv pentru autentificarea utilizatorului
+
+- **copilot-client.js**:
+  Adaptor tehnic pentru Copilot Language Server. Gestionează autentificarea, comunicarea cu Copilot și verificarea dependențelor.
+
+- **pilot-agent-cli.js**:
+  Interfața CLI principală care orchestrează automatizarea proiectului: gestionarea configurației, execuția agentului, interacțiunea Git.
+
+=== Rezumat Arhitectură
+
+[source]
+----
+copilot-auth.js      → Gestionarea autentificării
+copilot-client.js    → Adaptor tehnic Copilot (infrastructură)
+pilot-agent-cli.js   → Punct de intrare CLI, orchestrare business
+----
+
+== Arhitectura Proiectului
+
+=== Implementarea Arhitecturii Hexagonale
+
+[source]
+----
+Domeniu (Nucleu Business)
+├── entities/           # Entități business (ProjectConfig)
+├── ports/             # Contracte interfață (FileSystem, GitRepository)
+└── services/          # Orchestrare business (CopilotAgentService)
+
+Infrastructură (Adaptoare)
+├── adapters/          # Implementări concrete
+├── config/           # Gestionarea configurației
+└── process/          # Gestionarea proceselor
+----
+
+=== Principii SOLID Aplicate
+
+- **S**ingle Responsibility: Fiecare clasă are o responsabilitate
+- **O**pen/Closed: Extensibilă prin interfețe (porturi)
+- **L**iskov Substitution: Adaptoarele respectă contractele lor
+- **I**nterface Segregation: Interfețe specializate, țintite
+- **D**ependency Inversion: Domeniul depinde doar de abstracții
