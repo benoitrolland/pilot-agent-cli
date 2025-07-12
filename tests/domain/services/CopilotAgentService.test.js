@@ -109,6 +109,8 @@ describe('CopilotAgentService', () => {
     describe('readContextFiles', () => {
         it('should read existing context files', async () => {
             const config = new ProjectConfig({
+                prompt: 'Test prompt',
+                targetFiles: ['test.js'],
                 readFiles: ['README.md', 'nonexistent.txt']
             });
 
@@ -139,7 +141,8 @@ describe('CopilotAgentService', () => {
             const originalContent = 'const x = 1;';
             const contextContent = { 'README.md': '# Test' };
             const config = new ProjectConfig({
-                prompt: 'Add documentation'
+                prompt: 'Add documentation',
+                targetFiles: ['test.js']
             });
 
             const result = service.buildCopilotContext(

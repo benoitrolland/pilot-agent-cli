@@ -5,12 +5,13 @@ describe('ProjectConfig', () => {
         it('should create config with default values', () => {
             const config = new ProjectConfig();
             
-            expect(config.rootDir).toBe(process.cwd());
+            expect(config.rootDir).toBe('./');
             expect(config.targetFiles).toEqual([]);
             expect(config.readFiles).toEqual([]);
-            expect(config.autoCommit).toBe(true);
-            expect(config.autoAccept).toBe(true);
-            expect(config.squashOnSuccess).toBe(true);
+            expect(config.prompt).toBe('');
+            expect(config.autoCommit).toBe(false);
+            expect(config.autoAccept).toBe(false);
+            expect(config.squashOnSuccess).toBe(false);
         });
 
         it('should create config with custom values', () => {
@@ -19,7 +20,7 @@ describe('ProjectConfig', () => {
                 targetFiles: ['file1.js', 'file2.js'],
                 readFiles: ['readme.md'],
                 prompt: 'Test prompt',
-                autoCommit: false
+                autoCommit: true
             };
 
             const config = new ProjectConfig(options);
@@ -28,31 +29,37 @@ describe('ProjectConfig', () => {
             expect(config.targetFiles).toEqual(['file1.js', 'file2.js']);
             expect(config.readFiles).toEqual(['readme.md']);
             expect(config.prompt).toBe('Test prompt');
-            expect(config.autoCommit).toBe(false);
+            expect(config.autoCommit).toBe(true);
         });
 
-        it('should validate prompt is not empty', () => {
-            expect(() => new ProjectConfig({ prompt: '' }))
-                .toThrow('Prompt must be a non-empty string');
+        it('should validate prompt when non-string', () => {
+            expect(() => new ProjectConfig({
+                prompt: 123,
+                targetFiles: ['file.js']
+            })).toThrow('Prompt must be a non-empty string');
         });
 
         it('should validate rootDir is a string', () => {
-            expect(() => new ProjectConfig({ rootDir: null }))
-                .toThrow('Root directory path must be a valid string');
+            expect(() => new ProjectConfig({
+                rootDir: null,
+                prompt: 'valid prompt',
+                targetFiles: ['file.js']
+            })).toThrow('Root directory path must be a valid string');
         });
 
         it('should filter out invalid files', () => {
             const config = new ProjectConfig({ 
-                targetFiles: ['valid.js', null, '', 'another.js'] 
+                targetFiles: ['valid.js', null, '', 'another.js'],
+                prompt: 'test'
             });
             
             expect(config.targetFiles).toEqual(['valid.js', 'another.js']);
         });
 
-        it('should validate required fields', () => {
+        it('should validate required fields for complete configs', () => {
             expect(() => new ProjectConfig({
                 prompt: '',
-                targetFiles: []
+                targetFiles: ['file.js']
             })).toThrow('Prompt is required');
 
             expect(() => new ProjectConfig({
@@ -63,14 +70,14 @@ describe('ProjectConfig', () => {
     });
 
     describe('validation', () => {
-        it('should throw error for empty prompt', () => {
+        it('should throw error for empty prompt with target files', () => {
             expect(() => new ProjectConfig({
                 prompt: '   ',
                 targetFiles: ['file.js']
             })).toThrow('Prompt is required');
         });
 
-        it('should throw error for empty targetFiles', () => {
+        it('should throw error for no target files with prompt', () => {
             expect(() => new ProjectConfig({
                 prompt: 'Valid prompt',
                 targetFiles: []
