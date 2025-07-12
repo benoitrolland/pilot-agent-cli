@@ -1,0 +1,98 @@
+= Ръководство за Използване | Usage Guide
+:toc:
+:lang: bg
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | link:usage-de.adoc[Deutsch] | link:usage-es.adoc[Español] | link:usage-zh.adoc[中文] | link:usage-hi.adoc[हिन्दी] | link:usage-ru.adoc[Русский] | link:usage-ar.adoc[العربية] | link:usage-ja.adoc[日本語] | link:usage-bn.adoc[বাংলা] | link:usage-pt.adoc[Português] | link:usage-yue.adoc[粵語] | link:usage-vi.adoc[Tiếng Việt] | link:usage-tr.adoc[Türkçe] | link:usage-it.adoc[Italiano] | link:usage-fa.adoc[فارسی] | link:usage-mr.adoc[मराठी] | link:usage-wuu.adoc[吳語] | link:usage-ta.adoc[தமிழ்] | link:usage-pl.adoc[Polski] | link:usage-ro.adoc[Română] | link:usage-nl.adoc[Nederlands] | link:usage-sv.adoc[Svenska] | link:usage-no.adoc[Norsk] | link:usage-fi.adoc[Suomi] | link:usage-da.adoc[Dansk] | link:usage-hr.adoc[Hrvatski] | *Български* | link:usage-el.adoc[Ελληνικά] | link:usage-cs.adoc[Čeština]
+
+== Инсталация
+
+[source,shell]
+----
+npm install
+----
+
+== Бързо Започване
+
+=== 1. Тестване на CLI
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. Инициализиране на конфигурацията
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. Стартиране на тестове
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. Показване на конфигурацията
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. Стартиране на агента (след конфигуриране)
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== Разширено Използване
+
+=== Настройка на Автентикация
+Преди използване на агента, настройте GitHub Copilot автентикация:
+
+[source,shell]
+----
+# Терминал 1: Стартиране на сървър за автентикация
+node copilot-auth.js
+
+# Терминал 2: Използване на клиента
+node copilot-client.js demo
+----
+
+=== Персонализирана Конфигурация
+[source,shell]
+----
+# Стартиране с персонализиран конфигурационен файл
+node pilot-agent-cli.js run --config ./my-config.json --verbose
+
+# Показване на текущата конфигурация
+node pilot-agent-cli.js config
+----
+
+== Налични Команди
+
+=== CLI Команди
+- `init` - Създаване на файл с конфигурация по подразбиране
+- `run` - Изпълнение на Pilot Agent с текущата конфигурация
+- `config` - Показване на текущата конфигурация
+- `test` - Стартиране на основни тестове и валидации
+- `help` - Показване на помощно съобщение
+
+=== Опции
+- `--config <път>` - Указване на път към конфигурационен файл (по подразбиране: ./pilot-agent.config.json)
+- `--verbose` - Активиране на подробно логиране
+
+== Отстраняване на Проблеми
+
+=== Зависимости
+Уверете се, че GitHub Copilot Language Server е инсталиран:
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== Автентикация
+Проверете GitHub автентикацията:
+[source,shell]
+----
+gh auth status
+----

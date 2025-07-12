@@ -1,0 +1,98 @@
+= Οδηγός Χρήσης | Usage Guide
+:toc:
+:lang: el
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | link:usage-de.adoc[Deutsch] | link:usage-es.adoc[Español] | link:usage-zh.adoc[中文] | link:usage-hi.adoc[हिन्दी] | link:usage-ru.adoc[Русский] | link:usage-ar.adoc[العربية] | link:usage-ja.adoc[日本語] | link:usage-bn.adoc[বাংলা] | link:usage-pt.adoc[Português] | link:usage-yue.adoc[粵語] | link:usage-vi.adoc[Tiếng Việt] | link:usage-tr.adoc[Türkçe] | link:usage-it.adoc[Italiano] | link:usage-fa.adoc[فارسی] | link:usage-mr.adoc[मराठी] | link:usage-wuu.adoc[吳語] | link:usage-ta.adoc[தமிழ்] | link:usage-pl.adoc[Polski] | link:usage-ro.adoc[Română] | link:usage-nl.adoc[Nederlands] | link:usage-sv.adoc[Svenska] | link:usage-no.adoc[Norsk] | link:usage-fi.adoc[Suomi] | link:usage-da.adoc[Dansk] | link:usage-hr.adoc[Hrvatski] | link:usage-bg.adoc[Български] | *Ελληνικά* | link:usage-cs.adoc[Čeština]
+
+== Εγκατάσταση
+
+[source,shell]
+----
+npm install
+----
+
+== Γρήγορη Έναρξη
+
+=== 1. Δοκιμή του CLI
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. Αρχικοποίηση διαμόρφωσης
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. Εκτέλεση δοκιμών
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. Προβολή διαμόρφωσης
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. Εκτέλεση του πράκτορα (μετά τη διαμόρφωση)
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== Προχωρημένη Χρήση
+
+=== Ρύθμιση Πιστοποίησης
+Πριν από τη χρήση του πράκτορα, ρυθμίστε την πιστοποίηση GitHub Copilot:
+
+[source,shell]
+----
+# Τερματικό 1: Εκκίνηση διακομιστή πιστοποίησης
+node copilot-auth.js
+
+# Τερματικό 2: Χρήση του πελάτη
+node copilot-client.js demo
+----
+
+=== Προσαρμοσμένη Διαμόρφωση
+[source,shell]
+----
+# Εκτέλεση με προσαρμοσμένο αρχείο διαμόρφωσης
+node pilot-agent-cli.js run --config ./my-config.json --verbose
+
+# Προβολή τρέχουσας διαμόρφωσης
+node pilot-agent-cli.js config
+----
+
+== Διαθέσιμες Εντολές
+
+=== CLI Εντολές
+- `init` - Δημιουργία προεπιλεγμένου αρχείου διαμόρφωσης
+- `run` - Εκτέλεση Pilot Agent με τρέχουσα διαμόρφωση
+- `config` - Εμφάνιση τρέχουσας διαμόρφωσης
+- `test` - Εκτέλεση βασικών δοκιμών και επαληθεύσεων
+- `help` - Εμφάνιση μηνύματος βοήθειας
+
+=== Επιλογές
+- `--config <διαδρομή>` - Καθορισμός διαδρομής αρχείου διαμόρφωσης (προεπιλογή: ./pilot-agent.config.json)
+- `--verbose` - Ενεργοποίηση λεπτομερούς καταγραφής
+
+== Αντιμετώπιση Προβλημάτων
+
+=== Εξαρτήσεις
+Βεβαιωθείτε ότι το GitHub Copilot Language Server είναι εγκατεστημένο:
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== Πιστοποίηση
+Επαληθεύστε την πιστοποίηση GitHub:
+[source,shell]
+----
+gh auth status
+----

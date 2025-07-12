@@ -10,47 +10,42 @@ link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deuts
 === Sloj Autentifikacije i Klijenta
 
 - **copilot-auth.js**:
-  . Pokreta copilot-language-server
-  . Upravlja dijalogu autentifikacije
+  . Pokreće copilot-language-server
+  . Upravlja dijalogom autentifikacije (pokretanje, potvrda, anketiranje, odjava)
   . Provjerava i prikazuje status autentifikacije
-  . Pruža interaktivni CLI za korisničku autentifikaciju
+  . Omogućuje korisniku autentifikaciju ili odjavu preko interaktivnog CLI-ja
 
 - **copilot-client.js**:
-  Tehnički adapter za Copilot Language Server. Rukuje autentifikacijom, komunikacijom s Copilot i verifikacijom ovisnosti.
+  Tehnički adapter za Copilot Language Server. Upravlja autentifikacijom, komunikacijom s Copilotom (zahtjevi za dopunjavanje, prijedlozi), provjera ovisnosti i pruža mock-ove za razvoj.
 
 - **pilot-agent-cli.js**:
-  Glavno CLI sučelje koje organizira automatizaciju projekta: upravljanje konfiguracijama, izvršavanje agenta, Git interakcija.
+  Primarno CLI sučelje koje orkestrira automatizaciju projekta: upravljanje konfiguracije, izvršavanje agenta, Git interakcija, prikaz logova i rezultata.
 
-=== Sažetak Arhitekture
+=== Pregled Arhitekture
 
 [source]
 ----
 copilot-auth.js      → Upravljanje autentifikacijom
 copilot-client.js    → Tehnički Copilot adapter (infrastruktura)
-pilot-agent-cli.js   → CLI ulazna točka, poslovna orkestracija
+pilot-agent-cli.js   → CLI ulazna točka, poslovna orkestracija (aplikacija)
 ----
 
-== Arhitektura Projekta
+== Kategorije datoteka po ulogama
 
-=== Implementacija Heksagonalne Arhitekture
+=== Glavni alati i Infrastruktura
 
-[source]
-----
-Domena (Poslovna Jezgra)
-├── entities/           # Poslovni entiteti (ProjectConfig)
-├── ports/             # Ugovori sučelja (FileSystem, GitRepository)
-└── services/          # Poslovna orkestracija (CopilotAgentService)
+. **copilot-auth.js**: CLI alat za Copilot autentifikaciju (infrastruktura, CLI sučelje)
+. **copilot-client.js**: Primarni klijent za interakciju s Copilot serverom (infrastruktura, tehnički adapter)
+. **pilot-agent-cli.js**: Poslovna orkestracija CLI, koristi CopilotClient i heksagonalne usluge
+. **src/infrastructure/process/SecureProcessLauncher.js**: Sigurni pokretač procesa (infrastruktura)
 
-Infrastruktura (Adapteri)
-├── adapters/          # Konkretne implementacije
-├── config/           # Upravljanje konfiguracijama
-└── process/          # Upravljanje procesima
-----
+=== Primjer i demo datoteke
 
-=== Primijenjeni SOLID Principi
+. **test_fibonacci.py**: Primjer Python datoteke za testiranje Copilot dopunjavanja
+. **test_quicksort.js**: Primjer JavaScript datoteke za testiranje Copilot dopunjavanja
+. **test_react.jsx**: Primjer React komponente za testiranje Copilot dopunjavanja
 
-- **S**ingle Responsibility: Svaka klasa ima jednu odgovornost
-- **O**pen/Closed: Proširiva putem sučelja (portovi)
-- **L**iskov Substitution: Adapteri poštuju svoje ugovore
-- **I**nterface Segregation: Specijalizirana, ciljna sučelja
-- **D**ependency Inversion: Domena ovisi samo o apstrakcijama
+=== Konfiguracija i poslovni ciljevi
+
+. **pilot-agent.config.json**: Konfiguracijska datoteka projekta za agenta
+. **pilot-agent.config.example.json**: Primjer konfiguracije generirane naredbom init

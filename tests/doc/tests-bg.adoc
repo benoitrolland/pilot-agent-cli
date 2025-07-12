@@ -1,0 +1,63 @@
+= Ръководство за Тестване | Testing Guide
+:toc:
+:lang: bg
+
+[.lead]
+link:tests.adoc[English] | link:tests-fr.adoc[Français] | link:tests-de.adoc[Deutsch] | link:tests-es.adoc[Español] | link:tests-zh.adoc[中文] | link:tests-hi.adoc[हिन्दी] | link:tests-ru.adoc[Русский] | link:tests-ar.adoc[العربية] | link:tests-ja.adoc[日本語] | link:tests-bn.adoc[বাংলা] | link:tests-pt.adoc[Português] | link:tests-yue.adoc[粵語] | link:tests-vi.adoc[Tiếng Việt] | link:tests-tr.adoc[Türkçe] | link:tests-it.adoc[Italiano] | link:tests-fa.adoc[فارسی] | link:tests-mr.adoc[मराठी] | link:tests-wuu.adoc[吳語] | link:tests-ta.adoc[தமிழ்] | link:tests-pl.adoc[Polski] | link:tests-ro.adoc[Română] | link:tests-nl.adoc[Nederlands] | link:tests-sv.adoc[Svenska] | link:tests-no.adoc[Norsk] | link:tests-fi.adoc[Suomi] | link:tests-da.adoc[Dansk] | link:tests-hr.adoc[Hrvatski] | *Български* | link:tests-el.adoc[Ελληνικά] | link:tests-cs.adoc[Čeština]
+
+== Стартиране на Тестове
+
+За да изпълните тестовете в този проект, използвайте следната команда в терминала:
+
+[source,shell]
+----
+npm test
+----
+
+Тази команда стартира пълния Jest тестов пакет с TDD покритие.
+
+=== Алтернативни команди за тестване
+
+[source,shell]
+----
+# Стартиране на тестове с покритие
+npm run test:coverage
+
+# Стартиране на тестове в режим на наблюдение
+npm run test:watch
+
+# Стартиране на интегрирани CLI тестове
+node pilot-agent-cli.js test
+----
+
+== Архитектура на Тестовете
+
+Нашите тестове следват хексагоналната архитектура:
+
+[source]
+----
+tests/
+├── domain/              # Тестове на бизнес логиката
+│   ├── entities/        # Тестове на обектите
+│   └── services/        # Тестове на услугите
+└── infrastructure/      # Тестове на адаптерите
+    └── adapters/        # Тестове на инфраструктурните адаптери
+----
+
+== Изисквания
+
+Уверете се, че сте в основната директория на проекта и че всички зависимости са инсталирани с `npm install`.
+
+== Приложени TDD Принципи
+
+. **Червено**: Напишете тест, който не минава
+. **Зелено**: Напишете минималния код, за да минава
+. **Рефакториране**: Подобрете кода, запазвайки тестовете зелени
+
+== Покритие на Тестовете
+
+Текущо покритие: **38 минаващи теста** с минимален праг от 80% за:
+- Разклонения
+- Функции
+- Редове
+- Израз

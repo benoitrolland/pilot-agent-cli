@@ -1,0 +1,98 @@
+= Vodič za Korištenje | Usage Guide
+:toc:
+:lang: hr
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | link:usage-de.adoc[Deutsch] | link:usage-es.adoc[Español] | link:usage-zh.adoc[中文] | link:usage-hi.adoc[हिन्दी] | link:usage-ru.adoc[Русский] | link:usage-ar.adoc[العربية] | link:usage-ja.adoc[日本語] | link:usage-bn.adoc[বাংলা] | link:usage-pt.adoc[Português] | link:usage-yue.adoc[粵語] | link:usage-vi.adoc[Tiếng Việt] | link:usage-tr.adoc[Türkçe] | link:usage-it.adoc[Italiano] | link:usage-fa.adoc[فارسی] | link:usage-mr.adoc[मराठी] | link:usage-wuu.adoc[吳語] | link:usage-ta.adoc[தமிழ்] | link:usage-pl.adoc[Polski] | link:usage-ro.adoc[Română] | link:usage-nl.adoc[Nederlands] | link:usage-sv.adoc[Svenska] | link:usage-no.adoc[Norsk] | link:usage-fi.adoc[Suomi] | link:usage-da.adoc[Dansk] | *Hrvatski* | link:usage-bg.adoc[Български] | link:usage-el.adoc[Ελληνικά] | link:usage-cs.adoc[Čeština]
+
+== Instalacija
+
+[source,shell]
+----
+npm install
+----
+
+== Brzi Početak
+
+=== 1. Testiraj CLI
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. Inicijaliziraj konfiguraciju
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. Pokreni testove
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. Prikaži konfiguraciju
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. Pokreni agenta (nakon konfiguracije)
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== Napredna Upotreba
+
+=== Postavka Autentifikacije
+Prije korištenja agenta, postavite GitHub Copilot autentifikaciju:
+
+[source,shell]
+----
+# Terminal 1: Pokretanje servera za autentifikaciju
+node copilot-auth.js
+
+# Terminal 2: Korištenje klijenta
+node copilot-client.js demo
+----
+
+=== Prilagođena Konfiguracija
+[source,shell]
+----
+# Pokretanje s prilagođenom konfiguracijskom datotekom
+node pilot-agent-cli.js run --config ./my-config.json --verbose
+
+# Prikaz trenutne konfiguracije
+node pilot-agent-cli.js config
+----
+
+== Dostupne Naredbe
+
+=== CLI Naredbe
+- `init` - Stvori zadanu konfiguracijsku datoteku
+- `run` - Izvršava Pilot Agent s trenutnom konfigracijom
+- `config` - Prikazuje trenutnu konfiguraciju
+- `test` - Pokreće osnovne testove i validacije
+- `help` - Prikazuje poruku pomoći
+
+=== Opcije
+- `--config <putanja>` - Specificira putanju konfiguracijske datoteke (zadano: ./pilot-agent.config.json)
+- `--verbose` - Omogućuje opširno zapisivanje
+
+== Rješavanje Problema
+
+=== Ovisnosti
+Provjerite je li GitHub Copilot Language Server instaliran:
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== Autentifikacija
+Provjerite GitHub autentifikaciju:
+[source,shell]
+----
+gh auth status
+----

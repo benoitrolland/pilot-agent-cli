@@ -7,50 +7,45 @@ link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deuts
 
 == Filoversigt
 
-=== Godkendelses- og Klientlag
+=== Autentificering og Klientlag
 
 - **copilot-auth.js**:
   . Starter copilot-language-server
-  . Håndterer godkendelsesdialog
-  . Tjekker og viser godkendelsesstatus
-  . Giver interaktiv CLI til brugergodkendelse
+  . Håndterer autentificeringsdialog (initiering, bekræftelse, polling, logud)
+  . Tjekker og viser autentificeringsstatus
+  . Giver brugeren mulighed for at autentificere eller logge ud via interaktiv CLI
 
 - **copilot-client.js**:
-  Teknisk adapter til Copilot Language Server. Håndterer godkendelse, kommunikation med Copilot og afhængighedsverifikation.
+  Teknisk adapter til Copilot Language Server. Håndterer autentificering, kommunikation med Copilot (kompletionsanmodninger, forslag), afhængighedstjek og tilbyder mocks til udvikling.
 
 - **pilot-agent-cli.js**:
-  Hoved CLI-interface der organiserer projektautomatisering: konfigurationsstyring, agentudførelse, Git-interaktion.
+  Primær CLI-interface der orkestrerer projektautomatisering: konfigurationshåndtering, agentudførelse, Git-interaktion, log- og resultatvisning.
 
-=== Arkitekturoversigt
+=== Arkitektur Oversigt
 
 [source]
 ----
-copilot-auth.js      → Godkendelsesstyring
+copilot-auth.js      → Autentificeringshåndtering
 copilot-client.js    → Teknisk Copilot adapter (infrastruktur)
-pilot-agent-cli.js   → CLI indgangspunkt, forretningsorkestrering
+pilot-agent-cli.js   → CLI-indgangspunkt, forretningsorkestrering (applikation)
 ----
 
-== Projektarkitektur
+== Filkategorier efter rolle
 
-=== Hexagonal Arkitektur Implementation
+=== Hovedværktøjer og Infrastruktur
 
-[source]
-----
-Domæne (Forretningskerne)
-├── entities/           # Forretningsenheder (ProjectConfig)
-├── ports/             # Grænsefladekontrakter (FileSystem, GitRepository)
-└── services/          # Forretningsorkestrering (CopilotAgentService)
+. **copilot-auth.js**: CLI-værktøj til Copilot-autentificering (infrastruktur, CLI-interface)
+. **copilot-client.js**: Primær klient til interaktion med Copilot-serveren (infrastruktur, teknisk adapter)
+. **pilot-agent-cli.js**: Forretningsorkestrering CLI, bruger CopilotClient og hexagonale tjenester
+. **src/infrastructure/process/SecureProcessLauncher.js**: Sikker processtarteprogram (infrastruktur)
 
-Infrastruktur (Adaptere)
-├── adapters/          # Konkrete implementeringer
-├── config/           # Konfigurationsstyring
-└── process/          # Processtyring
-----
+=== Eksempel- og demofiler
 
-=== Anvendte SOLID-principper
+. **test_fibonacci.py**: Eksempel Python-fil til test af Copilot-kompletion
+. **test_quicksort.js**: Eksempel JavaScript-fil til test af Copilot-kompletion
+. **test_react.jsx**: Eksempel React-komponent til test af Copilot-kompletion
 
-- **S**ingle Responsibility: Hver klasse har ét ansvar
-- **O**pen/Closed: Udvidelig via grænseflader (porte)
-- **L**iskov Substitution: Adaptere respekterer deres kontrakter
-- **I**nterface Segregation: Specialiserede, målrettede grænseflader
-- **D**ependency Inversion: Domænet afhænger kun af abstraktioner
+=== Konfiguration og forretningsområder
+
+. **pilot-agent.config.json**: Projektkonfigurationsfil til agenten
+. **pilot-agent.config.example.json**: Eksempel på konfiguration genereret af init-kommandoen

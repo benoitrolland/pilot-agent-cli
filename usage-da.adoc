@@ -1,0 +1,98 @@
+= Brugsguide | Usage Guide
+:toc:
+:lang: da
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | link:usage-de.adoc[Deutsch] | link:usage-es.adoc[Español] | link:usage-zh.adoc[中文] | link:usage-hi.adoc[हिन्दी] | link:usage-ru.adoc[Русский] | link:usage-ar.adoc[العربية] | link:usage-ja.adoc[日本語] | link:usage-bn.adoc[বাংলা] | link:usage-pt.adoc[Português] | link:usage-yue.adoc[粵語] | link:usage-vi.adoc[Tiếng Việt] | link:usage-tr.adoc[Türkçe] | link:usage-it.adoc[Italiano] | link:usage-fa.adoc[فارسی] | link:usage-mr.adoc[मराठी] | link:usage-wuu.adoc[吳語] | link:usage-ta.adoc[தமிழ்] | link:usage-pl.adoc[Polski] | link:usage-ro.adoc[Română] | link:usage-nl.adoc[Nederlands] | link:usage-sv.adoc[Svenska] | link:usage-no.adoc[Norsk] | link:usage-fi.adoc[Suomi] | *Dansk* | link:usage-hr.adoc[Hrvatski] | link:usage-bg.adoc[Български] | link:usage-el.adoc[Ελληνικά] | link:usage-cs.adoc[Čeština]
+
+== Installation
+
+[source,shell]
+----
+npm install
+----
+
+== Hurtig Start
+
+=== 1. Test CLI'en
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. Initialiser konfiguration
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. Kør tests
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. Vis konfiguration
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. Kør agenten (efter konfiguration)
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== Avanceret Brug
+
+=== Autentificeringskonfiguration
+Før brug af agenten, sæt GitHub Copilot autentificering op:
+
+[source,shell]
+----
+# Terminal 1: Start autentificeringsserver
+node copilot-auth.js
+
+# Terminal 2: Brug klienten
+node copilot-client.js demo
+----
+
+=== Brugerdefineret Konfiguration
+[source,shell]
+----
+# Kør med brugerdefineret konfigurationsfil
+node pilot-agent-cli.js run --config ./my-config.json --verbose
+
+# Vis nuværende konfiguration
+node pilot-agent-cli.js config
+----
+
+== Tilgængelige Kommandoer
+
+=== CLI Kommandoer
+- `init` - Opret standard konfigurationsfil
+- `run` - Udfør Pilot Agent med nuværende konfiguration
+- `config` - Vis nuværende konfiguration
+- `test` - Kør grundlæggende tests og valideringer
+- `help` - Vis hjælpebesked
+
+=== Valgmuligheder
+- `--config <sti>` - Angiv konfigurationsfilsti (standard: ./pilot-agent.config.json)
+- `--verbose` - Aktivér udførlig logning
+
+== Fejlfinding
+
+=== Afhængigheder
+Sørg for at GitHub Copilot Language Server er installeret:
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== Autentificering
+Verificer GitHub autentificering:
+[source,shell]
+----
+gh auth status
+----

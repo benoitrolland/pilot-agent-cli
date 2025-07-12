@@ -1,0 +1,63 @@
+= Průvodce Testování | Testing Guide
+:toc:
+:lang: cs
+
+[.lead]
+link:tests.adoc[English] | link:tests-fr.adoc[Français] | link:tests-de.adoc[Deutsch] | link:tests-es.adoc[Español] | link:tests-zh.adoc[中文] | link:tests-hi.adoc[हिन्दी] | link:tests-ru.adoc[Русский] | link:tests-ar.adoc[العربية] | link:tests-ja.adoc[日本語] | link:tests-bn.adoc[বাংলা] | link:tests-pt.adoc[Português] | link:tests-yue.adoc[粵語] | link:tests-vi.adoc[Tiếng Việt] | link:tests-tr.adoc[Türkçe] | link:tests-it.adoc[Italiano] | link:tests-fa.adoc[فارسی] | link:tests-mr.adoc[मराठी] | link:tests-wuu.adoc[吳語] | link:tests-ta.adoc[தமிழ்] | link:tests-pl.adoc[Polski] | link:tests-ro.adoc[Română] | link:tests-nl.adoc[Nederlands] | link:tests-sv.adoc[Svenska] | link:tests-no.adoc[Norsk] | link:tests-fi.adoc[Suomi] | link:tests-da.adoc[Dansk] | link:tests-hr.adoc[Hrvatski] | link:tests-bg.adoc[Български] | link:tests-el.adoc[Ελληνικά] | *Čeština*
+
+== Spouštění Testů
+
+Pro spuštění testů v tomto projektu použijte následující příkaz v terminálu:
+
+[source,shell]
+----
+npm test
+----
+
+Tento příkaz spustí kompletní Jest testovací sadu s TDD pokrytím.
+
+=== Alternativní příkazy pro testování
+
+[source,shell]
+----
+# Spuštění testů s pokrytím
+npm run test:coverage
+
+# Spuštění testů v režimu sledování
+npm run test:watch
+
+# Spuštění integrovaných CLI testů
+node pilot-agent-cli.js test
+----
+
+== Architektura Testů
+
+Naše testy následují hexagonální architekturu:
+
+[source]
+----
+tests/
+├── domain/              # Testy obchodní logiky
+│   ├── entities/        # Testy entit
+│   └── services/        # Testy služeb
+└── infrastructure/      # Testy adaptérů
+    └── adapters/        # Testy infrastrukturních adaptérů
+----
+
+== Požadavky
+
+Ujistěte se, že jste v kořenovém adresáři projektu a že všechny závislosti jsou nainstalovány pomocí `npm install`.
+
+== Aplikované TDD Principy
+
+. **Červená**: Napište test, který selže
+. **Zelená**: Napište minimální kód pro úspěch
+. **Refaktoring**: Vylepšete kód při zachování zeleného stavu testů
+
+== Pokrytí Testů
+
+Aktuální pokrytí: **38 úspěšných testů** s minimálním prahem 80% pro:
+- Větve
+- Funkce
+- Řádky
+- Příkazy

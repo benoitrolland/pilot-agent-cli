@@ -1,0 +1,98 @@
+= Průvodce Použitím | Usage Guide
+:toc:
+:lang: cs
+
+[.lead]
+link:usage.adoc[English] | link:usage-fr.adoc[Français] | link:usage-de.adoc[Deutsch] | link:usage-es.adoc[Español] | link:usage-zh.adoc[中文] | link:usage-hi.adoc[हिन्दी] | link:usage-ru.adoc[Русский] | link:usage-ar.adoc[العربية] | link:usage-ja.adoc[日本語] | link:usage-bn.adoc[বাংলা] | link:usage-pt.adoc[Português] | link:usage-yue.adoc[粵語] | link:usage-vi.adoc[Tiếng Việt] | link:usage-tr.adoc[Türkçe] | link:usage-it.adoc[Italiano] | link:usage-fa.adoc[فارسی] | link:usage-mr.adoc[मराठी] | link:usage-wuu.adoc[吳語] | link:usage-ta.adoc[தமிழ்] | link:usage-pl.adoc[Polski] | link:usage-ro.adoc[Română] | link:usage-nl.adoc[Nederlands] | link:usage-sv.adoc[Svenska] | link:usage-no.adoc[Norsk] | link:usage-fi.adoc[Suomi] | link:usage-da.adoc[Dansk] | link:usage-hr.adoc[Hrvatski] | link:usage-bg.adoc[Български] | link:usage-el.adoc[Ελληνικά] | *Čeština*
+
+== Instalace
+
+[source,shell]
+----
+npm install
+----
+
+== Rychlý Start
+
+=== 1. Testování CLI
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. Inicializace konfigurace
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. Spuštění testů
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. Zobrazení konfigurace
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. Spuštění agenta (po konfiguraci)
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== Pokročilé Použití
+
+=== Nastavení Autentifikace
+Před použitím agenta nastavte GitHub Copilot autentifikaci:
+
+[source,shell]
+----
+# Terminál 1: Spuštění autentifikačního serveru
+node copilot-auth.js
+
+# Terminál 2: Použití klienta
+node copilot-client.js demo
+----
+
+=== Vlastní Konfigurace
+[source,shell]
+----
+# Spuštění s vlastním konfiguračním souborem
+node pilot-agent-cli.js run --config ./my-config.json --verbose
+
+# Zobrazení aktuální konfigurace
+node pilot-agent-cli.js config
+----
+
+== Dostupné Příkazy
+
+=== CLI Příkazy
+- `init` - Vytvoření výchozího konfiguračního souboru
+- `run` - Spuštění Pilot Agent s aktuální konfigurací
+- `config` - Zobrazení aktuální konfigurace
+- `test` - Spuštění základních testů a validací
+- `help` - Zobrazení nápovědy
+
+=== Možnosti
+- `--config <cesta>` - Zadání cesty ke konfiguračnímu souboru (výchozí: ./pilot-agent.config.json)
+- `--verbose` - Povolení podrobného logování
+
+== Řešení Problémů
+
+=== Závislosti
+Ujistěte se, že je nainstalován GitHub Copilot Language Server:
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== Autentifikace
+Ověřte GitHub autentifikaci:
+[source,shell]
+----
+gh auth status
+----

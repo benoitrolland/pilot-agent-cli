@@ -5,52 +5,47 @@
 [.lead]
 link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | link:info-es.adoc[Español] | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語] | link:info-bn.adoc[বাংলা] | link:info-pt.adoc[Português] | link:info-yue.adoc[粵語] | link:info-vi.adoc[Tiếng Việt] | link:info-tr.adoc[Türkçe] | link:info-it.adoc[Italiano] | link:info-fa.adoc[فارسی] | link:info-mr.adoc[मराठी] | link:info-wuu.adoc[吳語] | link:info-ta.adoc[தமிழ்] | link:info-pl.adoc[Polski] | link:info-ro.adoc[Română] | link:info-nl.adoc[Nederlands] | link:info-sv.adoc[Svenska] | link:info-no.adoc[Norsk] | link:info-fi.adoc[Suomi] | link:info-da.adoc[Dansk] | link:info-hr.adoc[Hrvatski] | *Български* | link:info-el.adoc[Ελληνικά] | link:info-cs.adoc[Čeština]
 
-== Преглед на Файловете
+== Преглед на файловете
 
-=== Слой за Автентикация и Клиент
+=== Слой за автентикация и клиент
 
 - **copilot-auth.js**:
   . Стартира copilot-language-server
-  . Управлява диалога за автентикация
+  . Управлява диалог за автентикация (инициализация, потвърждение, проучване, излизане)
   . Проверява и показва статуса на автентикацията
-  . Предоставя интерактивен CLI за потребителска автентикация
+  . Позволява на потребителя да се автентикира или излезе чрез интерактивен CLI
 
 - **copilot-client.js**:
-  Технически адаптер за Copilot Language Server. Обработва автентикацията, комуникацията с Copilot и верификацията на зависимостите.
+  Технически адаптер за Copilot Language Server. Управлява автентикацията, комуникацията с Copilot (заявки за допълване, предложения), проверка на зависимости и предоставя mock-ове за разработка.
 
 - **pilot-agent-cli.js**:
-  Основен CLI интерфейс, който организира автоматизацията на проекта: управление на конфигурациите, изпълнение на агента, Git взаимодействие.
+  Основен CLI интерфейс, който организира автоматизацията на проекта: управление на конфигурацията, изпълнение на агента, Git взаимодействие, показване на логове и резултати.
 
-=== Резюме на Архитектурата
+=== Преглед на архитектурата
 
 [source]
 ----
 copilot-auth.js      → Управление на автентикацията
 copilot-client.js    → Технически Copilot адаптер (инфраструктура)
-pilot-agent-cli.js   → CLI входна точка, бизнес оркестрация
+pilot-agent-cli.js   → CLI входна точка, бизнес оркестрация (приложение)
 ----
 
-== Архитектура на Проекта
+== Категории файлове по роля
 
-=== Implementация на Шестоъгълна Архитектура
+=== Основни инструменти и инфраструктура
 
-[source]
-----
-Домейн (Бизнес Ядро)
-├── entities/           # Бизнес обекти (ProjectConfig)
-├── ports/             # Интерфейсни договори (FileSystem, GitRepository)
-└── services/          # Бизнес оркестрация (CopilotAgentService)
+. **copilot-auth.js**: CLI инструмент за Copilot автентикация (инфраструктура, CLI интерфейс)
+. **copilot-client.js**: Основен клиент за взаимодействие с Copilot сървъра (инфраструктура, технически адаптер)
+. **pilot-agent-cli.js**: Бизнес оркестрация CLI, използва CopilotClient и хексагонални услуги
+. **src/infrastructure/process/SecureProcessLauncher.js**: Сигурен стартер на процеси (инфраструктура)
 
-Инфраструктура (Адаптери)
-├── adapters/          # Конкретни имплементации
-├── config/           # Управление на конфигурацията
-└── process/          # Управление на процесите
-----
+=== Примерни и демо файлове
 
-=== Приложени SOLID Принципи
+. **test_fibonacci.py**: Примерен Python файл за тестване на Copilot допълване
+. **test_quicksort.js**: Примерен JavaScript файл за тестване на Copilot допълване
+. **test_react.jsx**: Примерен React компонент за тестване на Copilot допълване
 
-- **S**ingle Responsibility: Всеки клас има една отговорност
-- **O**pen/Closed: Разширяем чрез интерфейси (портове)
-- **L**iskov Substitution: Адаптерите спазват своите договори
-- **I**nterface Segregation: Специализирани, целенасочени интерфейси
-- **D**ependency Inversion: Домейнът зависи само от абстракции
+=== Конфигурация и бизнес цели
+
+. **pilot-agent.config.json**: Конфигурационен файл на проекта за агента
+. **pilot-agent.config.example.json**: Примерна конфигурация генерирана от init командата

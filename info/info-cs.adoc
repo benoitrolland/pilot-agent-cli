@@ -7,50 +7,45 @@ link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deuts
 
 == Přehled Souborů
 
-=== Vrstva Autentizace a Klienta
+=== Vrstva Autentifikace a Klienta
 
 - **copilot-auth.js**:
   . Spouští copilot-language-server
-  . Spravuje dialog autentizace
-  . Kontroluje a zobrazuje stav autentizace
-  . Poskytuje interaktivní CLI pro uživatelskou autentizaci
+  . Spravuje dialog autentifikace (inicializace, potvrzení, dotazování, odhlášení)
+  . Kontroluje a zobrazuje stav autentifikace
+  . Umožňuje uživateli autentifikaci nebo odhlášení prostřednictvím interaktivního CLI
 
 - **copilot-client.js**:
-  Technický adaptér pro Copilot Language Server. Zpracovává autentizaci, komunikaci s Copilot a ověření závislostí.
+  Technický adaptér pro Copilot Language Server. Spravuje autentifikaci, komunikaci s Copilotem (požadavky na dokončení, návrhy), kontrolu závislostí a poskytuje mock objekty pro vývoj.
 
 - **pilot-agent-cli.js**:
-  Hlavní CLI rozhraní organizující automatizaci projektu: správa konfigurace, spuštění agenta, Git interakce.
+  Primární CLI rozhraní orchestrující automatizaci projektu: správa konfigurace, spouštění agenta, Git interakce, zobrazování logů a výsledků.
 
-=== Shrnutí Architektury
+=== Přehled Architektury
 
 [source]
 ----
-copilot-auth.js      → Správa autentizace
+copilot-auth.js      → Správa autentifikace
 copilot-client.js    → Technický Copilot adaptér (infrastruktura)
-pilot-agent-cli.js   → CLI vstupní bod, obchodní orchestrace
+pilot-agent-cli.js   → CLI vstupní bod, obchodní orchestrace (aplikace)
 ----
 
-== Architektura Projektu
+== Kategorie souborů podle role
 
-=== Implementace Hexagonální Architektury
+=== Hlavní nástroje a Infrastruktura
 
-[source]
-----
-Doména (Obchodní Jádro)
-├── entities/           # Obchodní entity (ProjectConfig)
-├── ports/             # Smlouvy rozhraní (FileSystem, GitRepository)
-└── services/          # Obchodní orchestrace (CopilotAgentService)
+. **copilot-auth.js**: CLI nástroj pro Copilot autentifikaci (infrastruktura, CLI rozhraní)
+. **copilot-client.js**: Primární klient pro interakci s Copilot serverem (infrastruktura, technický adaptér)
+. **pilot-agent-cli.js**: Obchodní orchestrace CLI, používá CopilotClient a hexagonální služby
+. **src/infrastructure/process/SecureProcessLauncher.js**: Bezpečný spouštěč procesů (infrastruktura)
 
-Infrastruktura (Adaptéry)
-├── adapters/          # Konkrétní implementace
-├── config/           # Správa konfigurace
-└── process/          # Správa procesů
-----
+=== Ukázkové a demo soubory
 
-=== Aplikované SOLID Principy
+. **test_fibonacci.py**: Ukázkový Python soubor pro testování Copilot dokončování
+. **test_quicksort.js**: Ukázkový JavaScript soubor pro testování Copilot dokončování
+. **test_react.jsx**: Ukázková React komponenta pro testování Copilot dokončování
 
-- **S**ingle Responsibility: Každá třída má jednu odpovědnost
-- **O**pen/Closed: Rozšiřitelné pomocí rozhraní (porty)
-- **L**iskov Substitution: Adaptéry respektují své smlouvy
-- **I**nterface Segregation: Specializované, cílené rozhraní
-- **D**ependency Inversion: Doména závisí pouze na abstrakcích
+=== Konfigurace a obchodní cíle
+
+. **pilot-agent.config.json**: Konfigurační soubor projektu pro agenta
+. **pilot-agent.config.example.json**: Ukázková konfigurace generovaná příkazem init
