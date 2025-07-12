@@ -1,0 +1,56 @@
+= Cliente GitHub Copilot - Información del Proyecto
+:toc:
+:lang: es
+
+[.lead]
+link:info.adoc[English] | link:info-fr.adoc[Français] | link:info-de.adoc[Deutsch] | *Español* | link:info-zh.adoc[中文] | link:info-hi.adoc[हिन्दी] | link:info-ru.adoc[Русский] | link:info-ar.adoc[العربية] | link:info-ja.adoc[日本語]
+
+== Resumen de Archivos
+
+=== Capa de Autenticación y Cliente
+
+- **copilot-auth.js**:
+  . Inicia el copilot-language-server
+  . Gestiona el diálogo de autenticación
+  . Verifica y muestra el estado de autenticación
+  . Proporciona CLI interactiva para autenticación de usuario
+
+- **copilot-client.js**:
+  Adaptador técnico para Copilot Language Server. Maneja autenticación, comunicación con Copilot y verificación de dependencias.
+
+- **pilot-agent-cli.js**:
+  Interfaz CLI principal orquestando automatización de proyectos: gestión de configuración, ejecución de agente, interacción Git.
+
+=== Resumen de Arquitectura
+
+[source]
+----
+copilot-auth.js      → Gestión de autenticación
+copilot-client.js    → Adaptador técnico Copilot (infraestructura)
+pilot-agent-cli.js   → Punto de entrada CLI, orquestación de negocio
+----
+
+== Arquitectura del Proyecto
+
+=== Implementación de Arquitectura Hexagonal
+
+[source]
+----
+Dominio (Núcleo de Negocio)
+├── entities/           # Entidades de negocio (ProjectConfig)
+├── ports/             # Contratos de interfaz (FileSystem, GitRepository)
+└── services/          # Orquestación de negocio (CopilotAgentService)
+
+Infraestructura (Adaptadores)
+├── adapters/          # Implementaciones concretas
+├── config/           # Gestión de configuración
+└── process/          # Gestión de procesos
+----
+
+=== Principios SOLID Aplicados
+
+- **S**ingle Responsibility: Cada clase tiene una responsabilidad
+- **O**pen/Closed: Extensible vía interfaces (puertos)
+- **L**iskov Substitution: Los adaptadores respetan sus contratos
+- **I**nterface Segregation: Interfaces especializadas y focalizadas
+- **D**ependency Inversion: El dominio depende solo de abstracciones

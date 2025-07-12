@@ -1,85 +1,89 @@
-= Testing Guide
+= Testing Guide | Guide des Tests
 :toc:
+:lang: en
+
+[.lead]
+*English* | link:tests\README-fr.adoc[Français]
 
 == Introduction
 
-Ce projet utilise une approche *Test-Driven Development (TDD)* avec Jest comme framework de test.
+This project uses a *Test-Driven Development (TDD)* approach with Jest as the testing framework.
 
-== Structure des tests
+== Test Structure
 
 [source]
 ----
 tests/
-├── domain/              # Tests de la logique métier
-│   ├── entities/        # Tests des entités
-│   └── services/        # Tests des services
-└── infrastructure/      # Tests des adaptateurs
-    └── adapters/        # Tests des adaptateurs d'infrastructure
+├── domain/              # Business logic tests
+│   ├── entities/        # Entity tests
+│   └── services/        # Service tests
+└── infrastructure/      # Adapter tests
+    └── adapters/        # Infrastructure adapter tests
 ----
 
-== Exécution des tests
+== Running Tests
 
-=== Tests unitaires complets
+=== Complete unit tests
 [source,bash]
 ----
 npm test
 ----
 
-=== Tests avec couverture
+=== Tests with coverage
 [source,bash]
 ----
 npm run test:coverage
 ----
 
-=== Tests en mode watch
+=== Tests in watch mode
 [source,bash]
 ----
 npm run test:watch
 ----
 
-=== Tests intégrés dans la CLI
+=== Integrated CLI tests
 [source,bash]
 ----
 node pilot-agent-cli.js test
 ----
 
-== Principes TDD appliqués
+== TDD Principles Applied
 
-. *Red* : Écrire un test qui échoue
-. *Green* : Écrire le code minimal pour le faire passer
-. *Refactor* : Améliorer le code tout en gardant les tests verts
+. *Red*: Write a failing test
+. *Green*: Write minimal code to make it pass
+. *Refactor*: Improve code while keeping tests green
 
-== Types de tests
+== Test Types
 
-=== Tests d'entités (Domain)
-- Validation des données
-- Logique métier pure
-- Sérialisation/désérialisation
+=== Entity Tests (Domain)
+- Data validation
+- Pure business logic
+- Serialization/deserialization
 
-=== Tests de services (Domain)
-- Orchestration des opérations
-- Gestion des erreurs
-- Intégration des ports
+=== Service Tests (Domain)
+- Operation orchestration
+- Error handling
+- Port integration
 
-=== Tests d'adaptateurs (Infrastructure)
-- Implémentation des ports
-- Intégration avec les systèmes externes
-- Gestion des erreurs techniques
+=== Adapter Tests (Infrastructure)
+- Port implementations
+- External system integration
+- Technical error handling
 
-== Bonnes pratiques
+== Best Practices
 
-=== Isolation des tests
-Chaque test est indépendant et utilise des mocks pour les dépendances externes.
+=== Test Isolation
+Each test is independent and uses mocks for external dependencies.
 
-=== Nomenclature
-- `describe()` : Décrit la classe ou le module testé
-- `it()` : Décrit un comportement spécifique
-- Noms descriptifs et lisibles
+=== Naming Convention
+- `describe()`: Describes the class or module being tested
+- `it()`: Describes a specific behavior
+- Descriptive and readable names
 
-=== Couverture
-Objectif : >90% de couverture de code pour la logique métier.
+=== Coverage
+Goal: >80% code coverage for business logic.
 
-== Configuration Jest
+== Jest Configuration
 
 [source,javascript]
 ----

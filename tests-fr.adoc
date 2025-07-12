@@ -1,0 +1,63 @@
+= Guide des Tests
+:toc:
+:lang: fr
+
+[.lead]
+link:tests.adoc[English] | *Français*
+
+== Exécution des Tests
+
+Pour exécuter les tests dans ce projet, utilisez la commande suivante dans le terminal :
+
+[source,shell]
+----
+npm test
+----
+
+Cette commande lance la suite de tests Jest complète avec couverture TDD.
+
+=== Commandes de test alternatives
+
+[source,shell]
+----
+# Lancer les tests avec couverture
+npm run test:coverage
+
+# Lancer les tests en mode surveillance
+npm run test:watch
+
+# Lancer les tests CLI intégrés
+node pilot-agent-cli.js test
+----
+
+== Architecture des Tests
+
+Nos tests suivent l'architecture hexagonale :
+
+[source]
+----
+tests/
+├── domain/              # Tests de logique métier
+│   ├── entities/        # Tests d'entités
+│   └── services/        # Tests de services
+└── infrastructure/      # Tests d'adaptateurs
+    └── adapters/        # Tests d'adaptateurs d'infrastructure
+----
+
+== Prérequis
+
+Assurez-vous d'être dans le répertoire racine du projet et que toutes les dépendances sont installées avec `npm install`.
+
+== Principes TDD Appliqués
+
+. **Rouge** : Écrire un test qui échoue
+. **Vert** : Écrire le code minimal pour le faire passer
+. **Refactoring** : Améliorer le code tout en gardant les tests verts
+
+== Couverture des Tests
+
+Couverture actuelle : **38 tests réussis** avec un seuil minimum de 80% pour :
+- Branches
+- Fonctions
+- Lignes
+- Instructions

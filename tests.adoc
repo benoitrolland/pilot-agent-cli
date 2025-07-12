@@ -1,8 +1,63 @@
-= tests
+= Testing Guide | Guide des Tests
+:toc:
+:lang: en
 
-Pour exécuter les tests dans ce projet, utilise la commande suivante dans le terminal :
+[.lead]
+*English* | link:tests-fr.adoc[Français]
+
+== Running Tests
+
+To execute tests in this project, use the following command in the terminal:
 
 [source,shell]
+----
+npm test
+----
+
+This command runs the complete Jest test suite with TDD coverage.
+
+=== Alternative test commands
+
+[source,shell]
+----
+# Run tests with coverage
+npm run test:coverage
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run integrated CLI tests
 node pilot-agent-cli.js test
-Cette commande lance les tests unitaires de base définis dans pilot-agent-cli.js (TDD, logique métier).
-Assure-toi d’être dans le dossier racine du projet et que toutes les dépendances sont installées.
+----
+
+== Test Architecture
+
+Our tests follow the hexagonal architecture:
+
+[source]
+----
+tests/
+├── domain/              # Business logic tests
+│   ├── entities/        # Entity tests
+│   └── services/        # Service tests
+└── infrastructure/      # Adapter tests
+    └── adapters/        # Infrastructure adapter tests
+----
+
+== Requirements
+
+Make sure you are in the project root directory and that all dependencies are installed with `npm install`.
+
+== TDD Principles Applied
+
+. **Red**: Write a failing test
+. **Green**: Write minimal code to make it pass
+. **Refactor**: Improve code while keeping tests green
+
+== Test Coverage
+
+Current coverage: **38 tests passing** with 80% minimum threshold for:
+- Branches
+- Functions
+- Lines
+- Statements

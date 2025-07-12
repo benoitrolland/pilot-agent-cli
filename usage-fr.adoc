@@ -1,0 +1,106 @@
+sions ver= Guide d'Utilisation
+:toc:
+:lang: fr
+
+[.lead]
+link:usage.adoc[English] | *Français*
+
+== Installation
+
+[source,shell]
+----
+npm install
+----
+
+== Démarrage Rapide
+
+=== 1. Tester la CLI
+[source,shell]
+----
+node pilot-agent-cli.js help
+----
+
+=== 2. Initialiser la configuration
+[source,shell]
+----
+node pilot-agent-cli.js init
+----
+
+=== 3. Lancer les tests
+[source,shell]
+----
+node pilot-agent-cli.js test
+----
+
+=== 4. Voir la configuration
+[source,shell]
+----
+node pilot-agent-cli.js config
+----
+
+=== 5. Lancer l'agent (après configuration)
+[source,shell]
+----
+node pilot-agent-cli.js run --verbose
+----
+
+== Utilisation Avancée
+
+=== Configuration de l'Authentification
+Avant d'utiliser l'agent, configurez l'authentification GitHub Copilot :
+
+[source,shell]
+----
+# Terminal 1 : Démarrer le serveur d'authentification
+node copilot-auth.js
+
+# Terminal 2 : Utiliser le client
+node copilot-client.js demo
+----
+
+=== Configuration Personnalisée
+[source,shell]
+----
+# Lancer avec un fichier de config personnalisé
+node pilot-agent-cli.js run --config ./ma-config.json --verbose
+
+# Voir la configuration actuelle
+node pilot-agent-cli.js config
+----
+
+== Commandes Disponibles
+
+=== Commandes CLI
+- `init` - Créer un fichier de configuration par défaut
+- `run` - Exécuter Pilot Agent avec la config actuelle
+- `config` - Afficher la configuration actuelle
+- `test` - Lancer les tests et validations de base
+- `help` - Afficher le message d'aide
+
+=== Options
+- `--config <chemin>` - Spécifier le chemin du fichier de config (défaut: ./pilot-agent.config.json)
+- `--verbose` - Activer l'affichage verbeux
+
+== Dépannage
+
+=== Dépendances
+Assurez-vous que GitHub Copilot Language Server est installé :
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== Authentification
+Vérifiez l'authentification GitHub :
+[source,shell]
+----
+gh auth status
+----
+
+== Architecture TDD et Hexagonale
+
+Ce projet suit les principes :
+- **TDD** : 38 tests passant avec couverture 80%+
+- **Architecture Hexagonale** : Séparation claire domaine/infrastructure
+- **SOLID** : Principes respectés dans toute la codebase
+- **Clean Code** : Code concis et efficace

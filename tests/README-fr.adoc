@@ -1,0 +1,113 @@
+= Guide des Tests
+:toc:
+:lang: fr
+
+[.lead]
+link:README.adoc[English] | *Français*
+
+== Introduction
+
+Ce projet utilise une approche *Test-Driven Development (TDD)* avec Jest comme framework de test.
+
+== Structure des Tests
+
+[source]
+----
+tests/
+├── domain/              # Tests de la logique métier
+│   ├── entities/        # Tests des entités
+│   └── services/        # Tests des services
+└── infrastructure/      # Tests des adaptateurs
+    └── adapters/        # Tests des adaptateurs d'infrastructure
+----
+
+== Exécution des Tests
+
+=== Tests unitaires complets
+[source,bash]
+----
+npm test
+----
+
+=== Tests avec couverture
+[source,bash]
+----
+npm run test:coverage
+----
+
+=== Tests en mode surveillance
+[source,bash]
+----
+npm run test:watch
+----
+
+=== Tests CLI intégrés
+[source,bash]
+----
+node pilot-agent-cli.js test
+----
+
+== Principes TDD Appliqués
+
+. *Rouge* : Écrire un test qui échoue
+. *Vert* : Écrire le code minimal pour le faire passer
+. *Refactoring* : Améliorer le code tout en gardant les tests verts
+
+== Types de Tests
+
+=== Tests d'Entités (Domaine)
+- Validation des données
+- Logique métier pure
+- Sérialisation/désérialisation
+
+=== Tests de Services (Domaine)
+- Orchestration des opérations
+- Gestion des erreurs
+- Intégration des ports
+
+=== Tests d'Adaptateurs (Infrastructure)
+- Implémentation des ports
+- Intégration avec les systèmes externes
+- Gestion des erreurs techniques
+
+== Bonnes Pratiques
+
+=== Isolation des Tests
+Chaque test est indépendant et utilise des mocks pour les dépendances externes.
+
+=== Convention de Nommage
+- `describe()` : Décrit la classe ou le module testé
+- `it()` : Décrit un comportement spécifique
+- Noms descriptifs et lisibles
+
+=== Couverture
+Objectif : >80% de couverture de code pour la logique métier.
+
+== Configuration Jest
+
+[source,javascript]
+----
+{
+  "testEnvironment": "node",
+  "collectCoverageFrom": [
+    "src/**/*.js",
+    "!src/**/*.test.js"
+  ],
+  "coverageThreshold": {
+    "global": {
+      "branches": 80,
+      "functions": 80,
+      "lines": 80,
+      "statements": 80
+    }
+  }
+}
+----
+
+== Architecture et Qualité
+
+=== Principes Respectés
+- **TDD** : 38 tests passants avec couverture 80%+
+- **Architecture Hexagonale** : Tests séparés par couche
+- **SOLID** : Mocks respectant les contrats
+- **Clean Code** : Tests concis et expressifs

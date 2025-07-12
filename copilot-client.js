@@ -132,7 +132,7 @@ class CopilotClient {
             copilotProcess.on('close', (code) => {
                 if (code === 0) {
                     try {
-                        const suggestions = this.parseCopilotResponse(response);
+                         const suggestions = this.parseCopilotResponse(response);
                         resolve(suggestions);
                     } catch (parseError) {
                         reject(new Error(`Failed to parse Copilot response: ${parseError.message}`));

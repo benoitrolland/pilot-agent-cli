@@ -1,32 +1,98 @@
-= Usage
+= Usage Guide | Guide d'Utilisation
+:toc:
+:lang: en
+
+[.lead]
+*English* | link:usage-fr.adoc[Français]
 
 == Installation
 
+[source,shell]
+----
 npm install
+----
 
-// == Initialize configuration
-// pilot-agent-cli init
+== Quick Start
 
-// == Run with default config
-// pilot-agent-cli run
-
-// == Run with custom config and verbose logging
-// pilot-agent-cli run --config ./my-config.json --verbose
-
-// == View current configuration
-// pilot-agent-cli config
-
-== Test the CLI
+=== 1. Test the CLI
+[source,shell]
+----
 node pilot-agent-cli.js help
+----
 
-== Initialize configuration
+=== 2. Initialize configuration
+[source,shell]
+----
 node pilot-agent-cli.js init
+----
 
-== Run tests
+=== 3. Run tests
+[source,shell]
+----
 node pilot-agent-cli.js test
+----
 
-== View configuration
+=== 4. View configuration
+[source,shell]
+----
 node pilot-agent-cli.js config
+----
 
-== Run the agent (after configuring)
+=== 5. Run the agent (after configuring)
+[source,shell]
+----
 node pilot-agent-cli.js run --verbose
+----
+
+== Advanced Usage
+
+=== Authentication Setup
+Before using the agent, set up GitHub Copilot authentication:
+
+[source,shell]
+----
+# Terminal 1: Start authentication server
+node copilot-auth.js
+
+# Terminal 2: Use the client
+node copilot-client.js demo
+----
+
+=== Custom Configuration
+[source,shell]
+----
+# Run with custom config file
+node pilot-agent-cli.js run --config ./my-config.json --verbose
+
+# View current configuration
+node pilot-agent-cli.js config
+----
+
+== Available Commands
+
+=== CLI Commands
+- `init` - Create default configuration file
+- `run` - Execute Pilot Agent with current config
+- `config` - Show current configuration
+- `test` - Run basic tests and validations
+- `help` - Show help message
+
+=== Options
+- `--config <path>` - Specify config file path (default: ./pilot-agent.config.json)
+- `--verbose` - Enable verbose logging
+
+== Troubleshooting
+
+=== Dependencies
+Make sure GitHub Copilot Language Server is installed:
+[source,shell]
+----
+npm install -g @github/copilot-language-server
+----
+
+=== Authentication
+Verify GitHub authentication:
+[source,shell]
+----
+gh auth status
+----
