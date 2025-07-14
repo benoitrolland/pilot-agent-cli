@@ -1,6 +1,6 @@
 {
   "name": "pilot-agent-cli",
-  "version": "1.1.4-beta.0",
+  "version": "1.1.5-beta.0",
   "description": "GitHub Copilot automation tool with configuration-driven file management",
   "main": "copilot-client.js",
   "bin": {
