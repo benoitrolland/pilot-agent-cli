@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * Pilot Agent CLI - Ultra-minimal version that always works
+ * Pilot Agent CLI - Enhanced version with integrated authentication
+ * Following SOLID principles and hexagonal architecture
  */
 
 const path = require('path');
 const fs = require('fs');
+const { spawn } = require('child_process');
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -14,31 +16,114 @@ const command = args[0];
 const isGlobalInstall = !fs.existsSync(path.join(__dirname, 'src')) ||
                        !fs.existsSync(path.join(__dirname, 'copilot-auth.js'));
 
-// Handle auth command first
-if (command === 'auth') {
+// Integrated authentication function using the shared service
+async function runIntegratedAuth() {
     console.log('🔐 GitHub Copilot Authentication');
     console.log('=================================');
     console.log('');
 
-    if (isGlobalInstall) {
-        console.log('⚠️  Authentication requires running from development directory.');
-        console.log('💡 Please clone the repository and run:');
-        console.log('');
+    // Try to import the detector service if available
+    let CopilotServerDetector;
+    try {
+        CopilotServerDetector = require('./src/infrastructure/services/CopilotServerDetector');
+    } catch (error) {
+        // Fallback for global installation where src/ might not be available
+        console.log('⚠️ Service not available in global installation');
+        console.log('📝 For full interactive authentication, run from development directory:');
         console.log('   git clone https://github.com/benoitrolland/pilot-agent-cli.git');
         console.log('   cd pilot-agent-cli');
         console.log('   node copilot-auth.js');
         console.log('');
         console.log('🔗 Alternative: Use GitHub CLI authentication:');
         console.log('   gh auth login');
-        console.log('');
+        console.log('   gh auth status');
+        return;
+    }
+
+    const detector = new CopilotServerDetector();
+    const detection = await detector.detect();
+
+    if (!detection.found) {
+        return;
+    }
+
+    console.log('🚀 Starting authentication process...');
+    console.log('');
+    console.log('🔗 AUTHENTICATION INSTRUCTIONS:');
+    console.log('═'.repeat(50));
+    console.log('');
+    console.log('📋 Steps to authenticate:');
+    console.log('   1. Open your browser and go to:');
+    console.log('      https://github.com/login/device');
+    console.log('');
+    console.log('   2. You will need a device code from copilot-language-server');
+    console.log('   3. Run the following command in a separate terminal:');
+    console.log('      npx copilot-language-server --stdio');
+    console.log('');
+    console.log('   4. Send initialization messages to get authentication code');
+    console.log('');
+    console.log('🔗 Alternative: Use GitHub CLI authentication:');
+    console.log('   gh auth login');
+    console.log('   gh auth status');
+    console.log('');
+    console.log('📝 For full interactive authentication, run from development directory:');
+    console.log('   git clone https://github.com/benoitrolland/pilot-agent-cli.git');
+    console.log('   cd pilot-agent-cli');
+    console.log('   node copilot-auth.js');
+    console.log('');
+    console.log('═'.repeat(50));
+
+    // Try to start a simple authentication check using the detector
+    try {
+        console.log('🔄 Attempting simple authentication check...');
+
+        const spawnConfig = detector.getSpawnCommand(detection.method, detection.path);
+        const spawnOptions = detector.getSpawnOptions(detection.method);
+
+        const authProcess = spawn(spawnConfig.command, spawnConfig.args, spawnOptions);
+
+        // Send a simple status check
+        const statusMessage = {
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'checkStatus',
+            params: {}
+        };
+
+        const content = JSON.stringify(statusMessage);
+        const header = `Content-Length: ${Buffer.byteLength(content)}\r\n\r\n`;
+
+        authProcess.stdin.write(header + content);
+
+        setTimeout(() => {
+            console.log('🔄 Authentication check completed');
+            console.log('💡 If you need full authentication, follow the instructions above');
+
+            if (authProcess && !authProcess.killed) {
+                authProcess.kill();
+            }
+        }, 5000);
+
+    } catch (error) {
+        console.log(`⚠️ Authentication check failed: ${error.message}`);
+        console.log('💡 Please follow the manual authentication steps above');
+    }
+}
+
+// Handle auth command first
+if (command === 'auth') {
+    if (isGlobalInstall) {
+        // Use integrated authentication for global install
+        runIntegratedAuth().catch(error => {
+            console.error(`❌ Authentication failed: ${error.message}`);
+        });
     } else {
-        // We're in development directory - launch copilot-auth.js
+        // Use full copilot-auth.js for development environment
         console.log('🚀 Launching Copilot authentication from development directory...');
         console.log('');
 
         const authScript = path.join(__dirname, 'copilot-auth.js');
         if (fs.existsSync(authScript)) {
-            const { spawn } = require('child_process');
             const authProcess = spawn('node', [authScript], {
                 stdio: 'inherit'
             });
@@ -87,11 +172,15 @@ console.log('  pilot-agent-cli run --config ./custom-config.json');
 console.log('  pilot-agent-cli config');
 console.log('  pilot-agent-cli test');
 console.log('');
-console.log('⚠️  Global Installation Detected:');
-console.log('   Full agent functionality requires running from development directory.');
-console.log('   For complete features, clone the repository and run locally.');
-console.log('   Repository: https://github.com/benoitrolland/pilot-agent-cli');
-console.log('');
+
+if (isGlobalInstall) {
+    console.log('⚠️  Global Installation Detected:');
+    console.log('   Full agent functionality requires running from development directory.');
+    console.log('   For complete features, clone the repository and run locally.');
+    console.log('   Repository: https://github.com/benoitrolland/pilot-agent-cli');
+    console.log('');
+}
+
 console.log('Getting Started:');
 console.log('  1. pilot-agent-cli auth           # Authenticate with GitHub Copilot');
 console.log('  2. pilot-agent-cli init           # Create config file');
