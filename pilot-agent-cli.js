@@ -6,6 +6,16 @@ const fs = require('fs');
 // Detect if running from global installation or local development
 const isGlobalInstall = !fs.existsSync(path.join(__dirname, 'src'));
 
+// Simple logging for debugging
+function debugLog(message) {
+    if (process.env.DEBUG_PILOT_CLI) {
+        console.log(`[DEBUG] ${message}`);
+    }
+}
+
+debugLog(`Running from: ${__dirname}`);
+debugLog(`Is global install: ${isGlobalInstall}`);
+
 // Import dependencies with fallbacks for global installation
 let CopilotClient, CopilotAgentService, SimpleGitAdapter, FileSystemAdapter, ConfigLoader, ProjectConfig;
 
@@ -13,9 +23,16 @@ if (!isGlobalInstall) {
     // Development environment - use local files
     try {
         CopilotClient = require('./copilot-client');
+        debugLog('Loaded CopilotClient successfully');
     } catch (error) {
         console.error('❌ Could not load CopilotClient:', error.message);
-        process.exit(1);
+        // Don't exit, use fallback
+        CopilotClient = class {
+            constructor(verbose = false) { this.verbose = verbose; }
+            async start() { return Promise.resolve(); }
+            async stop() { return Promise.resolve(); }
+            async getSuggestions() { return []; }
+        };
     }
 
     try {
@@ -24,12 +41,64 @@ if (!isGlobalInstall) {
         FileSystemAdapter = require('./src/infrastructure/adapters/FileSystemAdapter');
         ConfigLoader = require('./src/infrastructure/config/ConfigLoader');
         ProjectConfig = require('./src/domain/entities/ProjectConfig');
+        debugLog('Loaded all domain modules successfully');
     } catch (error) {
         console.error('❌ Could not load required modules:', error.message);
-        process.exit(1);
+        // Don't exit, use fallbacks
+        CopilotAgentService = class {
+            constructor() {}
+            async executeProject() {
+                throw new Error('Full agent functionality requires running from development directory.');
+            }
+        };
+
+        SimpleGitAdapter = class {
+            constructor() {}
+        };
+
+        FileSystemAdapter = class {
+            exists(path) { return fs.existsSync(path); }
+            resolve(...paths) { return path.resolve(...paths); }
+        };
+
+        ConfigLoader = class {
+            constructor() {}
+            generateDefaultConfig() {
+                return {
+                    rootDir: "./",
+                    targetFiles: ["src/app.js"],
+                    readFiles: ["README.md"],
+                    prompt: "Add error handling",
+                    autoCommit: true,
+                    autoAccept: true,
+                    commitMessage: "",
+                    squashOnSuccess: true
+                };
+            }
+            async saveConfig(config, filePath) {
+                fs.writeFileSync(filePath, JSON.stringify(config, null, 2));
+            }
+            async loadConfig(filePath) {
+                if (!fs.existsSync(filePath)) {
+                    throw new Error('Failed to load config');
+                }
+                return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+            }
+        };
+
+        ProjectConfig = class {
+            constructor(config) {
+                Object.assign(this, config);
+            }
+            toJSON() {
+                return { ...this };
+            }
+        };
     }
 } else {
     // Global installation - use fallback implementations
+    debugLog('Using fallback implementations for global install');
+
     CopilotClient = class {
         constructor(verbose = false) { this.verbose = verbose; }
         async start() { return Promise.resolve(); }
@@ -114,17 +183,26 @@ class Logger {
 
 class PilotAgentCLI {
     constructor() {
-        this.fileSystem = new FileSystemAdapter();
-        this.configLoader = new ConfigLoader(this.fileSystem);
-        this.isGlobalInstall = isGlobalInstall;
+        try {
+            this.fileSystem = new FileSystemAdapter();
+            this.configLoader = new ConfigLoader(this.fileSystem);
+            this.isGlobalInstall = isGlobalInstall;
+            debugLog('PilotAgentCLI initialized successfully');
+        } catch (error) {
+            console.error('❌ Failed to initialize CLI:', error.message);
+            // Continue with basic functionality
+            this.isGlobalInstall = true;
+        }
     }
 
     async run(args) {
-        const command = args[0] || 'help';
-        const verbose = args.includes('--verbose');
-        const logger = new Logger(verbose);
-
         try {
+            const command = args[0] || 'help';
+            const verbose = args.includes('--verbose');
+            const logger = new Logger(verbose);
+
+            debugLog(`Executing command: ${command}`);
+
             switch (command) {
                 case 'init':
                     await this.initConfig(args, logger);
@@ -147,11 +225,13 @@ class PilotAgentCLI {
                     break;
             }
         } catch (error) {
-            logger.error(`Command failed: ${error.message}`);
-            if (verbose) {
+            console.error(`❌ Command failed: ${error.message}`);
+            if (args.includes('--verbose')) {
                 console.error(error.stack);
             }
-            process.exit(1);
+            // Don't exit, just show help
+            console.log('\n');
+            this.showHelp();
         }
     }
 
