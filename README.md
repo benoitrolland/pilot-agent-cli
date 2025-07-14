@@ -38,4 +38,4 @@ Documentation is available in multiple languages in the `info/` directory and `u
 
 ## License
 
-MIT
+Apache-2.0

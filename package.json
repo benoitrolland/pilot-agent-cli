@@ -1,6 +1,6 @@
 {
   "name": "pilot-agent-cli",
-  "version": "1.0.2-beta.0",
+  "version": "1.0.4-beta.0",
   "description": "GitHub Copilot automation tool with configuration-driven file management",
   "main": "copilot-client.js",
   "bin": {
@@ -63,7 +63,7 @@
     "clean-code"
   ],
   "author": "Benoit ROLLAND",
-  "license": "Apache 2.0",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/benoitrolland/pilot-agent-cli.git"
