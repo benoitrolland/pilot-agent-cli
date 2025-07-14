@@ -585,6 +585,17 @@ async function main() {
     }
 }
 
+// Run CLI if called directly (not when imported)
+if (require.main === module) {
+    main().catch((error) => {
+        console.error('❌ Fatal error:', error.message);
+        process.exit(1);
+    });
+}
+
+// Export for use by other modules
+module.exports = CopilotClient;
+
 let client = null;
 
 process.on('SIGINT', async () => {
@@ -603,7 +614,3 @@ process.on('SIGTERM', async () => {
     process.exit(0);
 });
 
-main().catch((error) => {
-    console.error('❌ Fatal error:', error.message);
-    process.exit(1);
-});
