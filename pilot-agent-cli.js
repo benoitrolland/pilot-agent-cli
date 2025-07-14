@@ -3,49 +3,44 @@
 const path = require('path');
 const fs = require('fs');
 
-// Ensure all required directories exist
-const requiredDirs = [
-    path.join(__dirname, 'src', 'domain', 'entities'),
-    path.join(__dirname, 'src', 'domain', 'ports'), 
-    path.join(__dirname, 'src', 'domain', 'services'),
-    path.join(__dirname, 'src', 'infrastructure', 'adapters'),
-    path.join(__dirname, 'src', 'infrastructure', 'config'),
-    path.join(__dirname, 'src', 'core')
-];
+// Detect if running from global installation or local development
+const isGlobalInstall = !fs.existsSync(path.join(__dirname, 'src'));
 
-requiredDirs.forEach(dir => {
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-    }
-});
-
-// Import dependencies with fallbacks
+// Import dependencies with fallbacks for global installation
 let CopilotClient, CopilotAgentService, SimpleGitAdapter, FileSystemAdapter, ConfigLoader, ProjectConfig;
 
-try {
-    CopilotClient = require('./copilot-client');
-} catch (error) {
-    // Fallback CopilotClient implementation
+if (!isGlobalInstall) {
+    // Development environment - use local files
+    try {
+        CopilotClient = require('./copilot-client');
+    } catch (error) {
+        console.error('❌ Could not load CopilotClient:', error.message);
+        process.exit(1);
+    }
+
+    try {
+        CopilotAgentService = require('./src/domain/services/CopilotAgentService');
+        SimpleGitAdapter = require('./src/infrastructure/adapters/SimpleGitAdapter');
+        FileSystemAdapter = require('./src/infrastructure/adapters/FileSystemAdapter');
+        ConfigLoader = require('./src/infrastructure/config/ConfigLoader');
+        ProjectConfig = require('./src/domain/entities/ProjectConfig');
+    } catch (error) {
+        console.error('❌ Could not load required modules:', error.message);
+        process.exit(1);
+    }
+} else {
+    // Global installation - use fallback implementations
     CopilotClient = class {
         constructor(verbose = false) { this.verbose = verbose; }
         async start() { return Promise.resolve(); }
         async stop() { return Promise.resolve(); }
         async getSuggestions() { return []; }
     };
-}
 
-try {
-    CopilotAgentService = require('./src/domain/services/CopilotAgentService');
-    SimpleGitAdapter = require('./src/infrastructure/adapters/SimpleGitAdapter');
-    FileSystemAdapter = require('./src/infrastructure/adapters/FileSystemAdapter');
-    ConfigLoader = require('./src/infrastructure/config/ConfigLoader');
-    ProjectConfig = require('./src/domain/entities/ProjectConfig');
-} catch (error) {
-    // Fallback implementations for missing modules
     CopilotAgentService = class {
         constructor() {}
         async executeProject() {
-            throw new Error('CopilotAgentService not available. Please run from development directory.');
+            throw new Error('Full agent functionality requires running from development directory.');
         }
     };
 
@@ -121,6 +116,7 @@ class PilotAgentCLI {
     constructor() {
         this.fileSystem = new FileSystemAdapter();
         this.configLoader = new ConfigLoader(this.fileSystem);
+        this.isGlobalInstall = isGlobalInstall;
     }
 
     async run(args) {
@@ -141,6 +137,9 @@ class PilotAgentCLI {
                     break;
                 case 'test':
                     await this.runTests(args, logger);
+                    break;
+                case 'auth':
+                    await this.runAuth(args, logger);
                     break;
                 case 'help':
                 default:
@@ -303,6 +302,7 @@ class PilotAgentCLI {
         console.log('  run                           Execute Pilot Agent with current config');
         console.log('  config                        Show current configuration');
         console.log('  test                          Run basic tests');
+        console.log('  auth                          Run GitHub Copilot authentication');
         console.log('  help                          Show this help message');
         console.log('');
         console.log('Options:');
@@ -311,15 +311,25 @@ class PilotAgentCLI {
         console.log('');
         console.log('Examples:');
         console.log('  pilot-agent-cli init');
+        console.log('  pilot-agent-cli auth          # Authenticate with GitHub Copilot');
         console.log('  pilot-agent-cli run --verbose');
         console.log('  pilot-agent-cli run --config ./custom-config.json');
         console.log('  pilot-agent-cli config');
         console.log('  pilot-agent-cli test');
         console.log('');
+
+        if (this.isGlobalInstall) {
+            console.log('⚠️  Global Installation Detected:');
+            console.log('   Full agent functionality requires running from development directory.');
+            console.log('   For complete features, clone the repository and run locally.');
+            console.log('');
+        }
+
         console.log('Getting Started:');
-        console.log('  1. pilot-agent-cli init           # Create config file');
-        console.log('  2. Edit pilot-agent.config.json   # Customize settings');
-        console.log('  3. pilot-agent-cli run            # Execute automation');
+        console.log('  1. pilot-agent-cli auth           # Authenticate with GitHub Copilot');
+        console.log('  2. pilot-agent-cli init           # Create config file');
+        console.log('  3. Edit pilot-agent.config.json   # Customize settings');
+        console.log('  4. pilot-agent-cli run            # Execute automation');
         console.log('');
         console.log('Configuration File Structure:');
         console.log('  {');
@@ -337,6 +347,39 @@ class PilotAgentCLI {
         console.log('  - npm install -g @github/copilot-language-server');
         console.log('  - GitHub Copilot subscription');
         console.log('  - Authenticated GitHub CLI (gh auth login)');
+    }
+
+    async runAuth(args, logger) {
+        logger.info('🔐 Starting GitHub Copilot authentication...');
+
+        if (this.isGlobalInstall) {
+            logger.warn('Authentication feature not available in global installation');
+            logger.info('💡 For full authentication features, run from development directory');
+            logger.info('💡 Alternative: Use "gh auth login" for GitHub CLI authentication');
+            return;
+        }
+
+        // Launch copilot-auth.js
+        const { spawn } = require('child_process');
+        const authScript = path.join(__dirname, 'copilot-auth.js');
+
+        if (!fs.existsSync(authScript)) {
+            logger.error('copilot-auth.js not found');
+            return;
+        }
+
+        logger.info('🚀 Launching Copilot authentication...');
+        const authProcess = spawn('node', [authScript], {
+            stdio: 'inherit'
+        });
+
+        authProcess.on('close', (code) => {
+            if (code === 0) {
+                logger.info('✅ Authentication completed');
+            } else {
+                logger.error(`Authentication failed with code: ${code}`);
+            }
+        });
     }
 }
 
