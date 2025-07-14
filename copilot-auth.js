@@ -3,6 +3,7 @@ const readline = require('readline');
 const { promisify } = require('util');
 const exec = promisify(require('child_process').exec);
 const fs = require('fs');
+const path = require('path');
 
 let copilotServer = null;
 let messageId = 1;
@@ -14,32 +15,110 @@ async function startCopilotServer() {
   console.log('🔧 Searching for copilot-language-server...');
 
   let serverPath = null;
-  
-  try {
-    // Detect server path
-    const { stdout } = await exec('which copilot-language-server');
-    serverPath = stdout.trim();
-    console.log('✅ copilot-language-server found:', serverPath);
+  let serverFound = false;
 
-    // Windows path conversion if needed
-    if (process.platform === 'win32' && serverPath.startsWith('/')) {
-      serverPath = serverPath.replace(/^\/([a-zA-Z])\//, '$1:/').replace(/\//g, '\\');
-      console.log('🔧 Path converted:', serverPath);
+  // Try different detection methods for cross-platform compatibility
+  const detectionMethods = [
+    // Method 1: Try npx which works on all platforms
+    async () => {
+      try {
+        await exec('npx copilot-language-server --version', { timeout: 5000 });
+        console.log('✅ copilot-language-server found via npx');
+        return 'npx';
+      } catch (error) {
+        return null;
+      }
+    },
+
+    // Method 2: Try direct command (works if in PATH)
+    async () => {
+      try {
+        await exec('copilot-language-server --version', { timeout: 5000 });
+        console.log('✅ copilot-language-server found in PATH');
+        return 'direct';
+      } catch (error) {
+        return null;
+      }
+    },
+
+    // Method 3: Try where command on Windows / which on Unix
+    async () => {
+      try {
+        const command = process.platform === 'win32' ? 'where copilot-language-server' : 'which copilot-language-server';
+        const { stdout } = await exec(command, { timeout: 5000 });
+        serverPath = stdout.trim();
+        console.log('✅ copilot-language-server found:', serverPath);
+        return 'path';
+      } catch (error) {
+        return null;
+      }
+    },
+
+    // Method 4: Check npm global directory
+    async () => {
+      try {
+        const { stdout } = await exec('npm root -g', { timeout: 5000 });
+        const globalNodeModules = stdout.trim();
+        const expectedPath = path.join(globalNodeModules, '@github', 'copilot-language-server');
+
+        if (fs.existsSync(expectedPath)) {
+          const binPath = path.join(expectedPath, 'bin', 'copilot-language-server');
+          if (fs.existsSync(binPath)) {
+            serverPath = binPath;
+            console.log('✅ copilot-language-server found in npm global:', serverPath);
+            return 'npm-global';
+          }
+        }
+        return null;
+      } catch (error) {
+        return null;
+      }
     }
-  } catch (error) {
+  ];
+
+  // Try each detection method
+  for (const method of detectionMethods) {
+    const result = await method();
+    if (result) {
+      serverFound = true;
+      break;
+    }
+  }
+
+  if (!serverFound) {
     console.error('❌ copilot-language-server not found');
     console.log('📦 Installation required:');
     console.log('   npm install -g @github/copilot-language-server');
+    console.log('');
+    console.log('🔍 Troubleshooting:');
+    console.log('   1. Verify installation: npx copilot-language-server --version');
+    console.log('   2. Check npm global path: npm root -g');
+    console.log('   3. Restart terminal after installation');
     process.exit(1);
   }
 
-  // Start attempts with different methods
+  // Start attempts with different methods - prioritize npx for reliability
   const attempts = [
-    () => spawn('npx', ['copilot-language-server', '--stdio'], { stdio: ['pipe', 'pipe', 'pipe'], shell: true }),
-    () => spawn('copilot-language-server', ['--stdio'], { stdio: ['pipe', 'pipe', 'pipe'], shell: true }),
-    () => spawn('node', [serverPath, '--stdio'], { stdio: ['pipe', 'pipe', 'pipe'] }),
-    () => spawn(serverPath, ['--stdio'], { stdio: ['pipe', 'pipe', 'pipe'] })
+    () => spawn('npx', ['copilot-language-server', '--stdio'], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: process.platform === 'win32' // Use shell on Windows for npx
+    }),
+    () => spawn('copilot-language-server', ['--stdio'], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: process.platform === 'win32'
+    })
   ];
+
+  // Add path-specific attempt if we found a specific path
+  if (serverPath) {
+    attempts.push(() => spawn('node', [serverPath, '--stdio'], {
+      stdio: ['pipe', 'pipe', 'pipe']
+    }));
+    attempts.push(() => spawn(serverPath, ['--stdio'], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: process.platform === 'win32'
+    }));
+  }
 
   let lastError = null;
   
@@ -95,6 +174,12 @@ async function startCopilotServer() {
 
   if (!copilotServer) {
     console.error('❌ Unable to start server');
+    console.log('🔍 Debugging information:');
+    console.log(`   Platform: ${process.platform}`);
+    console.log(`   Node version: ${process.version}`);
+    if (serverPath) {
+      console.log(`   Server path: ${serverPath}`);
+    }
     throw lastError || new Error('All attempts failed');
   }
 
