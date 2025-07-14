@@ -178,7 +178,7 @@ class PilotAgentCLI {
         } catch (error) {
             if (error.message.includes('Failed to load config')) {
                 logger.error('Configuration file not found or invalid');
-                logger.info('💡 Run "node pilot-agent-cli.js init" to create a default config');
+                logger.info('💡 Run "pilot-agent-cli init" to create a default config');
             } else {
                 throw error;
             }
@@ -194,7 +194,7 @@ class PilotAgentCLI {
             console.log(JSON.stringify(config.toJSON(), null, 2));
         } catch (error) {
             logger.error(`Could not load config: ${error.message}`);
-            logger.info('💡 Run "node pilot-agent-cli.js init" to create a default config');
+            logger.info('💡 Run "pilot-agent-cli init" to create a default config');
         }
     }
 
